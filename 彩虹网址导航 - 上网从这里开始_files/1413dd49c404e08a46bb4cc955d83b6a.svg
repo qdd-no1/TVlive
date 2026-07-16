@@ -1,0 +1,29 @@
+<svg width="32" height="32" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- 渐变定义 -->
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffd700;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ff8c00;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- 背景圆角矩形 -->
+  <rect x="10" y="10" width="80" height="80" rx="16" ry="16" 
+        fill="url(#logoGradient)"/>
+  
+  <!-- "纸" 字的核心设计 -->
+  <g fill="white" stroke="none">
+    <!-- 外框 -->
+    <rect x="25" y="20" width="50" height="40" rx="4" 
+          fill="none" 
+          stroke="white" 
+          stroke-width="2.5"/>
+    
+    <!-- 内部横线 -->
+    <rect x="30" y="30" width="40" height="2.5" rx="1.25"/>
+    <rect x="30" y="40" width="40" height="2.5" rx="1.25"/>
+    
+    <!-- 中间的点 -->
+    <circle cx="50" cy="26" r="2"/>
+  </g>
+</svg>
