@@ -1,104 +1,491 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
+<!-- saved from url=(0022)https://www.cccyun.cn/ -->
+<html lang="zh-CN" data-theme="light"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>欢迎光临</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            overflow: hidden;
-        }
-
-        .welcome-box {
-            text-align: center;
-            padding: 2rem;
-            max-width: 600px;
-            animation: appear 1.5s ease-out;
-        }
-
-        h1 {
-            font-size: 4rem;
-            margin-bottom: 1.5rem;
-            text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.1);
-            animation: float 3s ease-in-out infinite;
-        }
-
-        p {
-            font-size: 1.2rem;
-            opacity: 0.9;
-            margin-bottom: 2rem;
-            line-height: 1.6;
-        }
-
-        .home-link {
-            display: inline-block;
-            padding: 0.8rem 1.5rem;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 30px;
-            color: white;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-
-        .home-link:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-2px);
-        }
-
-        /* 背景装饰粒子 */
-        .particle {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 50%;
-            animation: drift 20s linear infinite;
-        }
-
-        @keyframes appear {
-            0% { opacity: 0; transform: translateY(50px); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-15px); }
-        }
-
-        @keyframes drift {
-            0% { transform: translate(0, 0) scale(0); }
-            100% { transform: translate(100vw, -100vh) scale(1); }
-        }
-
-        @media (max-width: 768px) {
-            h1 { font-size: 2.5rem; }
-            p { font-size: 1rem; }
-        }
-    </style>
+    <title>白菜影视 - 观影从这里开始</title>
+    <meta name="keywords" content="白菜网共享最快最方便的网上冲浪体验。">
+    <link href="./彩虹网址导航 - 上网从这里开始_files/bootstrap-5.3.8.min.css" rel="stylesheet">
+    <link href="./彩虹网址导航 - 上网从这里开始_files/bootstrap-icons-1.13.1.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="./彩虹网址导航 - 上网从这里开始_files/home.css">
+    
 </head>
 <body>
-    <!-- 背景装饰粒子 -->
-    <div class="particle" style="top:20%; left:5%; width:8px; height:8px; animation-delay:0s"></div>
-    <div class="particle" style="top:70%; left:80%; width:12px; height:12px; animation-delay:3s"></div>
-    <div class="particle" style="top:40%; left:90%; width:6px; height:6px; animation-delay:5s"></div>
 
-    <div class="welcome-box">
-        <h1>✨ 欢迎到来 ✨</h1>
-        <p>在这里，每一次点击都是全新的探索<br>让我们共同开启这段数字旅程</p>
-        <a href="https://xbaicai.qzz.io" class="home-link">开始探索 →</a>
-        
+<!-- 顶部背景区域 -->
+<header class="hero-section">
+    <div class="hero-overlay"></div>
+    <button class="theme-toggle" id="themeToggle" title="切换白天/黑夜模式">
+        <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
+    </button>
+    <div class="container position-relative" style="z-index:2;">
+        <h1 class="hero-title">白菜视迅网</h1>
+        <p class="hero-subtitle">白菜旗下站点导航</p>
+
+        <div class="search-box mx-auto">
+            <div class="search-tabs" id="searchTabs">
+                <button class="search-tab active" data-url="https://www.baidu.com/s?wd=" data-placeholder="输入关键词，使用百度搜索">
+                    <img class="search-tab-icon" src="./彩虹网址导航 - 上网从这里开始_files/baidu.png" alt=""> 百度
+                </button>
+                <button class="search-tab" data-url="https://www.google.com/search?q=" data-placeholder="输入关键词，使用谷歌搜索">
+                    <img class="search-tab-icon" src="./彩虹网址导航 - 上网从这里开始_files/google.png" alt=""> 谷歌
+                </button>
+                <button class="search-tab" data-url="https://www.sogou.com/web?query=" data-placeholder="输入关键词，使用搜狗搜索">
+                    <img class="search-tab-icon" src="./彩虹网址导航 - 上网从这里开始_files/sogou.png" alt=""> 搜狗
+                </button>
+                <button class="search-tab" data-url="https://www.zhihu.com/search?q=" data-placeholder="输入关键词，使用知乎搜索">
+                    <img class="search-tab-icon" src="./彩虹网址导航 - 上网从这里开始_files/zhihu.png" alt=""> 知乎
+                </button>
+                <button class="search-tab" data-url="https://github.com/search?q=" data-placeholder="输入关键词，使用Github搜索">
+                    <img class="search-tab-icon" src="./彩虹网址导航 - 上网从这里开始_files/github.png" alt=""> Github
+                </button>
+                <button class="search-tab" data-url="https://music.163.com/#/search/m/?s=" data-placeholder="输入关键词，使用网易云音乐搜索">
+                    <img class="search-tab-icon" src="./彩虹网址导航 - 上网从这里开始_files/wyy.png" alt=""> 音乐
+                </button>
+                <button class="search-tab" data-url="https://search.douban.com/book/subject_search?search_text=" data-placeholder="输入关键词，在豆瓣搜索图书">
+                    <img class="search-tab-icon" src="./彩虹网址导航 - 上网从这里开始_files/douban.png" alt=""> 图书
+                </button>
+                <button class="search-tab" data-url="https://search.bilibili.com/all?keyword=" data-placeholder="输入关键词，在哔哩哔哩搜索影视">
+                    <img class="search-tab-icon" src="./彩虹网址导航 - 上网从这里开始_files/bilibili.png" alt=""> 影视
+                </button>
+            </div>
+            <form class="search-form" id="searchForm">
+                <div class="input-group">
+                    <input type="text" class="form-control search-input" id="searchInput" placeholder="输入关键词，使用百度搜索" autocomplete="off">
+                    <button class="btn search-btn" type="submit">
+                        <i class="bi bi-search"></i> 搜索
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
+</header>
 
-</body>
-</html>
+
+<!-- 网站导航分类 -->
+<section class="nav-section py-4">
+    <div class="container">
+                <div class="nav-category mb-4">
+            <h2 class="section-title"><i class="bi bi-star-fill text-warning"></i> 白菜门户网</h2>
+                        <div class="row g-3">
+                                <div class="col-12 col-md-6 col-lg-3">
+                    <a href="https://read.wsnw.dpdns.org" target="_blank" class="site-card site-card-lg" data-linkid="32" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="白菜阅读，书以明志，白菜阅读致力于互联网电子书免费服务">
+                        <img class="site-icon site-icon-lg" src="./彩虹网址导航 - 上网从这里开始_files/saved_resource" alt="">
+                        <div class="site-info">
+                            <div class="site-name">缤纷白菜阅读</div>
+                            <div class="site-desc">书以明志，读书破万、笔下有神</div>
+                        </div>
+                    </a>
+                </div>
+                                <div class="col-12 col-md-6 col-lg-3">
+                    <a href="https://omnibox.wsnw.dpdns.org" target="_blank" class="site-card site-card-lg" data-linkid="29" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="OMNI影视">
+                        <img class="site-icon site-icon-lg" src="./彩虹网址导航 - 上网从这里开始_files/saved_resource(1)" alt="">
+                        <div class="site-info">
+                            <div class="site-name">OMNI影视</div>
+                            <div class="site-desc">OMNI影视</div>
+                        </div>
+                    </a>
+                </div>
+                                <div class="col-12 col-md-6 col-lg-3">
+                    <a href="https://tools.wsnw.dpdns.org" target="_blank" class="site-card site-card-lg" data-linkid="30" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="包含站长工具、实用工具、开发工具、娱乐工具，能够提供备案查询、IP所在地查询、域名Whois查询、域名拦截查询、编码解码、高速图床等功能。">
+                        <img class="site-icon site-icon-lg" src="./彩虹网址导航 - 上网从这里开始_files/f03a07e18f60ac5997679f736fb1890d.png" alt="">
+                        <div class="site-info">
+                            <div class="site-name">白菜工具网</div>
+                            <div class="site-desc">包含站长工具、实用工具、开发工具、娱乐工具。</div>
+                        </div>
+                    </a>
+                </div>
+                                <div class="col-12 col-md-6 col-lg-3">
+                    <a href="https://easyvoice.wsnw.dpdns.org" target="_blank" class="site-card site-card-lg" data-linkid="31" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="一本书，一杯茶，一思念，一份情">
+                        <img class="site-icon site-icon-lg" src="./彩虹网址导航 - 上网从这里开始_files/saved_resource(2)" alt="">
+                        <div class="site-info">
+                            <div class="site-name">小说转语音</div>
+                            <div class="site-desc">一本书，一杯茶，一思念，一份情。</div>
+                        </div>
+                    </a>
+                </div>
+                                <div class="col-12 col-md-6 col-lg-3">
+                    <a href="https://xbaicai.qzz.io" target="_blank" class="site-card site-card-lg" data-linkid="36" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="观影观景，黄昏有约">
+                        <img class="site-icon site-icon-lg" src="./彩虹网址导航 - 上网从这里开始_files/c8780c1fde92656a05f3cbe24297f312.png" alt="">
+                        <div class="site-info">
+                            <div class="site-name">libretv观影</div>
+                            <div class="site-desc">观影观景，黄昏有约</div>
+                        </div>
+                    </a>
+                </div>
+                                <div class="col-12 col-md-6 col-lg-3">
+                    <a href="http://fn.wsnw.dpdns.org" target="_blank" class="site-card site-card-lg" data-linkid="38" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="飞牛NAS，小网站大能量">
+                        <img class="site-icon site-icon-lg" src="./彩虹网址导航 - 上网从这里开始_files/c8780c1fde92656a05f3cbe24297f312.png" alt="">
+                        <div class="site-info">
+                            <div class="site-name">白菜飞牛</div>
+                            <div class="site-desc">飞牛NAS，小网站大能量</div>
+                        </div>
+                    </a>
+                </div>
+                                <div class="col-12 col-md-6 col-lg-3">
+                    <a href="https://domain.wsnw.dpdns.org" target="_blank" class="site-card site-card-lg" data-linkid="37" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="白菜外链网盘提供文件上传与分享功能，支持任意格式文件上传，可生成下载直连，方便分享。">
+                        <img class="site-icon site-icon-lg" src="./彩虹网址导航 - 上网从这里开始_files/ecdbf6521eca3dc3e079600abe70c915.png" alt="">
+                        <div class="site-info">
+                            <div class="site-name">白菜外链网盘</div>
+                            <div class="site-desc">白菜外链网盘提供文件上传与分享功能，支持任意格式文件上传，可生成下载直连，方便分享。</div>
+                        </div>
+                    </a>
+                </div>
+                                <div class="col-12 col-md-6 col-lg-3">
+                    <a href="https://wxchat.xbaicai.qzz.io" target="_blank" class="site-card site-card-lg" data-linkid="35" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="白菜微信传输，连接你我他">
+                        <img class="site-icon site-icon-lg" src="./彩虹网址导航 - 上网从这里开始_files/86510792af36f47621a41dc5b1e6a075.png" alt="">
+                        <div class="site-info">
+                            <div class="site-name">白菜微信传输助手</div>
+                            <div class="site-desc">白菜微信传输，连接你我他</div>
+                        </div>
+                    </a>
+                </div>
+                                <div class="col-12 col-md-6 col-lg-3">
+                    <a href="https://daohang.xbaicai.qzz.io" target="_blank" class="site-card site-card-lg" data-linkid="33" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="白菜导航，灯塔舵手，全网共享">
+                        <img class="site-icon site-icon-lg" src="./彩虹网址导航 - 上网从这里开始_files/08be5a6479b1c6903188aa6157651817.png" alt="">
+                        <div class="site-info">
+                            <div class="site-name">白菜导航</div>
+                            <div class="site-desc">白菜导航，灯塔舵手，全网共享</div>
+                        </div>
+                    </a>
+                </div>
+                                <div class="col-12 col-md-6 col-lg-3">
+                    <a href="https://bcys.de5.net" target="_blank" class="site-card site-card-lg" data-linkid="34" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="影视api中转，影视源来，分享无忧">
+                        <img class="site-icon site-icon-lg" src="./彩虹网址导航 - 上网从这里开始_files/c8780c1fde92656a05f3cbe24297f312.png" alt="">
+                        <div class="site-info">
+                            <div class="site-name">影视API代理</div>
+                            <div class="site-desc">影视api中转，影视源来，分享无忧</div>
+                        </div>
+                    </a>
+                </div>      
+                 
+                 
+                 <div class="col-12 col-md-6 col-lg-3">
+                    <a href="https://bttool.wsnw.cc.cd" target="_blank" class="site-card site-card-lg" data-linkid="47" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="白菜工具备份">
+                        <img class="site-icon site-icon-lg" src="./彩虹网址导航 - 上网从这里开始_files/e6bb1607ee4104d79011b99ad6924d1d.png" alt="">
+                        <div class="site-info">
+                            <div class="site-name">白菜工具</div>
+                            <div class="site-desc">白菜工具备份</div>
+                        </div>
+                    </a>
+                </div>
+                 
+                 <div class="col-12 col-md-6 col-lg-3">
+                    <a href="https://tuku.wsnw.us.ci" target="_blank" class="site-card site-card-lg" data-linkid="47" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="我的图标库">
+                        <img class="site-icon site-icon-lg" src="./彩虹网址导航 - 上网从这里开始_files/e6bb1607ee4104d79011b99ad6924d1d.png" alt="">
+                        <div class="site-info">
+                            <div class="site-name">我的图标库</div>
+                            <div class="site-desc">我的图标库份</div>
+                        </div>
+                    </a>
+                </div>
+                
+                
+                 <div class="col-12 col-md-6 col-lg-3">
+                    <a href="https://lidan.wsnw.us.ci" target="_blank" class="site-card site-card-lg" data-linkid="47" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="电子礼簿系统">
+                        <img class="site-icon site-icon-lg" src="./彩虹网址导航 - 上网从这里开始_files/e6bb1607ee4104d79011b99ad6924d1d.png" alt="">
+                        <div class="site-info">
+                            <div class="site-name">电子礼簿系统</div>
+                            <div class="site-desc">电子礼簿系统</div>
+                        </div>
+                    </a>
+                </div>
+                
+                <div class="col-12 col-md-6 col-lg-3">
+                    <a href="https://wpzl.wsnw.dpdns.org" target="_blank" class="site-card site-card-lg" data-linkid="47" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="网盘直链解析">
+                        <img class="site-icon site-icon-lg" src="./彩虹网址导航 - 上网从这里开始_files/e6bb1607ee4104d79011b99ad6924d1d.png" alt="">
+                        <div class="site-info">
+                            <div class="site-name">NFD网盘直链解析白菜版</div>
+                            <div class="site-desc">NFD网盘直链解析白菜版</div>
+                        </div>
+                    </a>
+                </div>
+                
+                
+                
+                
+                
+                
+                                <div class="col-12 col-md-6 col-lg-3">
+                    <a href="https://solara.wsnw.us.ci" target="_blank" class="site-card site-card-lg" data-linkid="47" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Solara音乐">
+                        <img class="site-icon site-icon-lg" src="./彩虹网址导航 - 上网从这里开始_files/e6bb1607ee4104d79011b99ad6924d1d.png" alt="">
+                        <div class="site-info">
+                            <div class="site-name">Solara音乐</div>
+                            <div class="site-desc">Solara音乐</div>
+                        </div>
+                    </a>
+                </div>
+                            </div>
+                    </div>
+                    
+                      
+                    
+                <div class="nav-category mb-4">
+            <h2 class="section-title"><i class="bi bi-github text-warning "></i> 电视影视</h2>
+                        <div class="row g-2">
+                                <div class="col-6 col-md-4 col-lg-3">
+                    <a href="/ckplayer-master/jnzh.html" target="_blank" class="site-card site-card-detail" data-linkid="39" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="济宁新闻综合">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/d697df98252e4a02216e72b599e3232a.png" alt="">
+                        <div class="site-info">
+                            <div class="site-name">济宁新闻综合</div>
+                            <div class="site-desc">孔孟之乡，大美运河</div>
+                        </div>
+                    </a>
+                </div>
+                                <div class="col-6 col-md-4 col-lg-3">
+                    <a href="/ckplayer-master/jnsh.html" target="_blank" class="site-card site-card-detail" data-linkid="42" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="济宁生活频道">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/08be5a6479b1c6903188aa6157651817.png" alt="">
+                        <div class="site-info">
+                            <div class="site-name">济宁生活频道</div>
+                            <div class="site-desc">济宁生活频道欢迎你</div>
+                        </div>
+                    </a>
+                </div>
+                                <div class="col-6 col-md-4 col-lg-3">
+                    <a href="/ckplayer-master/jngg.html" target="_blank" class="site-card site-card-detail" data-linkid="40" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="济宁公共频道">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/f03a07e18f60ac5997679f736fb1890d.png" alt="">
+                        <div class="site-info">
+                            <div class="site-name">济宁公共频道</div>
+                            <div class="site-desc">济宁公共频道欢迎五洲四海的朋友</div>
+                        </div>
+                    </a>
+                </div>
+                                <div class="col-6 col-md-4 col-lg-3">
+                    <a href="https://iapp.wstvs.com/share/dHZsLTMwMS0x.html?UL=2" target="_blank" class="site-card site-card-detail" data-linkid="41" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="汶上新闻网，大美佛欢迎你">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/7d901e933d4f8a0c82ef59fdc7408487.png" alt="">
+                        <div class="site-info">
+                            <div class="site-name">汶上新闻网</div>
+                            <div class="site-desc">中国佛都欢迎你</div>
+                        </div>
+                    </a>
+                </div>
+                
+                <div class="col-6 col-md-4 col-lg-3">
+                    <a href="ckplayer-master/壮志豪情永不休（舞曲版）.html" target="_blank" class="site-card site-card-detail" data-linkid="43" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="歌曲欣赏">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/ecdbf6521eca3dc3e079600abe70c915.png" alt="">
+                        <div class="site-info">
+                            <div class="site-name">壮志豪情永不休（舞曲版）</div>
+                            <div class="site-desc">歌曲欣赏</div>
+                        </div>
+                    </a>
+                </div>
+                
+                
+                                <div class="col-6 col-md-4 col-lg-3">
+                    <a href="ckplayer-master/lhqrl.html" target="_blank" class="site-card site-card-detail" data-linkid="43" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="歌曲欣赏">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/ecdbf6521eca3dc3e079600abe70c915.png" alt="">
+                        <div class="site-info">
+                            <div class="site-name">梨花飞情人泪</div>
+                            <div class="site-desc">歌曲欣赏</div>
+                        </div>
+                    </a>
+                </div>
+                                <div class="col-6 col-md-4 col-lg-3">
+                    <a href="/ckplayer-master/今夜为你醉.html" target="_blank" class="site-card site-card-detail" data-linkid="44" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="今夜为你醉">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/e6bb1607ee4104d79011b99ad6924d1d.png" alt="">
+                        <div class="site-info">
+                            <div class="site-name">今夜为你醉</div>
+                            <div class="site-desc">歌曲欣赏</div>
+                        </div>
+                    </a>
+                </div>
+                                <div class="col-6 col-md-4 col-lg-3">
+                    <a href="/ckplayer-master/劲爆舞曲DJ.html" target="_blank" class="site-card site-card-detail" data-linkid="45" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="劲爆舞曲DJ">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/146dcafa115287a2fd9d9725ace1d363.png" alt="">
+                        <div class="site-info">
+                            <div class="site-name">劲爆舞曲DJ</div>
+                            <div class="site-desc">歌曲欣赏</div>
+                        </div>
+                    </a>
+                </div>
+                                <div class="col-6 col-md-4 col-lg-3">
+                    <a href="/ckplayer-master/多年以后.html" target="_blank" class="site-card site-card-detail" data-linkid="46" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="D歌曲欣赏">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/146dcafa115287a2fd9d9725ace1d363.png" alt="">
+                        <div class="site-info">
+                            <div class="site-name">多年以后</div>
+                            <div class="site-desc">歌曲欣赏</div>
+                        </div>
+                    </a>
+                </div>
+                            </div>
+                    </div>
+                <div class="nav-category mb-4">
+            <h2 class="section-title"><i class="bi bi-tools text-warning"></i> 影视源路</h2>
+                        <div class="row g-2">
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://pc.woozooo.com/mydisk.php" target="_blank" class="site-card site-card-sm" data-linkid="48">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/c538e3148ea65b0576c7eda5eddf8191.png" alt=""> 我的兰凑云线                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://codeberg.org/qdd_ll/ziqidonglai" target="_blank" class="site-card site-card-sm" data-linkid="49">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/7cecd1054b3518555b8fa7bb1bd7652c.png" alt=""> qdd_ll/ziqidonglai-码                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://my.ksust.com/my.htm" target="_blank" class="site-card site-card-sm" data-linkid="50">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/f03a07e18f60ac5997679f736fb1890d.png" alt=""> >凯速线路                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://pastebin.com/u/qdd_l" target="_blank" class="site-card site-card-sm" data-linkid="51">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/f03a07e18f60ac5997679f736fb1890d.png" alt=""> 我的粘贴线路                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://gitee.com/qddl/qianggeyingshi" target="_blank" class="site-card site-card-sm" data-linkid="52">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/f03a07e18f60ac5997679f736fb1890d.png" alt=""> qianggeyingshi: 码云线                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://gitcode.com/weixin_62149518/qianggege" target="_blank" class="site-card site-card-sm" data-linkid="53">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/f03a07e18f60ac5997679f736fb1890d.png" alt=""> GitCode - 7线                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://github.com/qdd-no1/qiangdishi" target="_blank" class="site-card site-card-sm" data-linkid="54">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/f03a07e18f60ac5997679f736fb1890d.png" alt=""> github点播线路                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://turbo-sniffle-7v5wr5jvgp9vhpgwv.github.dev" target="_blank" class="site-card site-card-sm" data-linkid="55">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/f03a07e18f60ac5997679f736fb1890d.png" alt=""> githubcodespace                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://codeberg.org/qdd_ll/ziqidonglai/raw/branch/main/%E6%96%B0%E7%BA%BF%E8%B7%AF.json" target="_blank" class="site-card site-card-sm" data-linkid="56">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/github.png" alt=""> 我的多线                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://pastebin.com/raw/WRUWB9Lj" target="_blank" class="site-card site-card-sm" data-linkid="57">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/f03a07e18f60ac5997679f736fb1890d.png" alt=""> 粘贴网点播                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://tool.cccyun.cc/special_symbols" target="_blank" class="site-card site-card-sm" data-linkid="58">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/f03a07e18f60ac5997679f736fb1890d.png" alt=""> 特殊符号大全                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://tool.cccyun.cc/piano" target="_blank" class="site-card site-card-sm" data-linkid="59">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/f03a07e18f60ac5997679f736fb1890d.png" alt=""> 在线钢琴                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://cli.im/" target="_blank" class="site-card site-card-sm" data-linkid="60">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/saved_resource(4)" alt=""> 草料二维码生成器                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://imagestool.com/zh_CN/" target="_blank" class="site-card site-card-sm" data-linkid="61">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/saved_resource(5)" alt=""> 在线图片处理                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://tinypng.com/" target="_blank" class="site-card site-card-sm" data-linkid="69">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/saved_resource(6)" alt=""> TinyPNG图片压缩                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://zh.bgsub.com/" target="_blank" class="site-card site-card-sm" data-linkid="70">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/saved_resource(7)" alt=""> 消除图片背景                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://time.is/" target="_blank" class="site-card site-card-sm" data-linkid="62">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/saved_resource(8)" alt=""> 当前时间                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://rivers.chaitin.cn/tools/home" target="_blank" class="site-card site-card-sm" data-linkid="63">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/saved_resource(9)" alt=""> 百川云常用工具                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://www.locimg.com/" target="_blank" class="site-card site-card-sm" data-linkid="64">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/saved_resource(10)" alt=""> LOC专用图床                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://www.reg007.com/" target="_blank" class="site-card site-card-sm" data-linkid="65">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/saved_resource(11)" alt=""> 注册过的网站                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://tool.lu/" target="_blank" class="site-card site-card-sm" data-linkid="66">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/saved_resource(12)" alt=""> 在线工具箱                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://www.json.cn/" target="_blank" class="site-card site-card-sm" data-linkid="74">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/saved_resource(13)" alt=""> JSON在线解析                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://www.speedtest.cn/" target="_blank" class="site-card site-card-sm" data-linkid="75">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/saved_resource(14)" alt=""> 测速网                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://vocalremover.org/zh/" target="_blank" class="site-card site-card-sm" data-linkid="67">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/saved_resource(15)" alt=""> 分离人声                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://axutongxue.net/" target="_blank" class="site-card site-card-sm" data-linkid="76">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/saved_resource(16)" alt=""> 阿虚同学的储物间                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://www.itdog.cn/" target="_blank" class="site-card site-card-sm" data-linkid="68">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/saved_resource(17)" alt=""> 网站测速                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://n.showmsg.cn/" target="_blank" class="site-card site-card-sm" data-linkid="71">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/1413dd49c404e08a46bb4cc955d83b6a.svg" alt=""> 纸条 (Passnote)                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="http://24mail.chacuo.net/" target="_blank" class="site-card site-card-sm" data-linkid="77">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/02bb88e04fee1e04bdaa76e001fb32d3.png" alt=""> 临时邮箱                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://ip.skk.moe/" target="_blank" class="site-card site-card-sm" data-linkid="80">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/saved_resource(18)" alt=""> 查看我的IP地址                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://www.beeimg.cn/" target="_blank" class="site-card site-card-sm" data-linkid="82">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/saved_resource(19)" alt=""> 蜜蜂图床                    </a>
+                </div>
+                            </div>
+                    </div>
+                <div class="nav-category mb-4">
+            <h2 class="section-title"><i class="bi bi-link-45deg"></i> 友情链接</h2>
+                        <div class="row g-2">
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://www.xiaobaiyun.cn/aff/GMLPMFOV" target="_blank" class="site-card site-card-sm" data-linkid="72">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/saved_resource(20)" alt=""> 小白云                    </a>
+                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="https://www.aidun.cn/" target="_blank" class="site-card site-card-sm" data-linkid="81">
+                        <img class="site-icon" src="./彩虹网址导航 - 上网从这里开始_files/saved_resource(21)" alt=""> 爱盾                    </a>
+                </div>
+                            </div>
+                    </div><p> <img src="ckplayer-master/ckplayer/css/images/downloaded-image (1).png" > </p>
+            </div>
+            
+            
+</section>
+
+
+<!-- 页脚 -->
+<footer class="site-footer">
+    <div class="container">
+        <div class="footer-links">
+            <a href="https://120849.c6060h8.cc/default.php"><i class="bi bi-chat-left-text"></i> 1024</a>
+            <a href="https://120849.c6060h8.cc/pw/html_data/83/2606/8738721.html"><i class="bi bi-chat-left-text"></i> 正常联系</a>
+            <a href="https://www.cccyun.cn/about"><i class="bi bi-info-circle"></i> 关于我们</a>
+            <a href="https://www.cccyun.cn/contact"><i class="bi bi-envelope"></i> 联系我们</a>
+        </div>
+        <div class="footer-copy">
+            <p>© 2013-2026 灯下白菜网 All Rights Reserved.</p>
+            <a href="http://beian.miit.gov.cn/" target="_blank" rel="nofollow">鄂ICP备15665376号-3</a><br>
+<script src="./彩虹网址导航 - 上网从这里开始_files/hm.js"></script><script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?ee19ab0bfdc5ef4cb28e1eb0bda9f58f";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>        </div>
+    </div>
+</footer>
+
+<!-- 回到顶部 -->
+<button class="back-to-top" id="backToTop" title="回到顶部">
+    <i class="bi bi-chevron-up"></i>
+</button>
+
+<script src="./彩虹网址导航 - 上网从这里开始_files/jquery-3.7.1.min.js"></script>
+<script src="./彩虹网址导航 - 上网从这里开始_files/bootstrap.bundle-5.3.8.min.js"></script>
+<script src="./彩虹网址导航 - 上网从这里开始_files/home.js"></script>
+
+
+
+</body></html>
