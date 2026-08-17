@@ -464,7 +464,7 @@ const app = {
             year: 1987,
             rating: 7.7,
             views: 1800000,
-            poster: "https://raw.giteeusercontent.com/qddl/qianggeyingshi/raw/master/picture/%E6%B5%8E%E5%AE%81%E7%BB%BC%E5%90%88.jpeg",
+            poster: "https://raw.giteeusercontent.com/qddl/qianggeyingshi/raw/master/picture/%E6%B5%8E%E5%AE%81%E7%BB%BC%E5%90%88.jpeg?metadata=eyJyIjoibWFzdGVyIiwiZnAiOiJwaWN0dXJlL-a1juWugee7vOWQiC5qcGVnIiwidWlkIjoxNDQ3MTQyMywicGlkIjozNzUzODU1NCwic3RvIjoiZ2l0LXNoYXJkaW5nLXN0by00MnQtMDAyIiwicnAiOiJyZXBvcy9jYy9hZi9jY2FmNmQ5OGQxOTBmZGMxMTRhNDhmODBkYTY2YjUxOGZjYzQ0MzRhOGQyMDIyOWFjMzU1NWU3ZjBmN2JmZjVmLmdpdCIsImlzcCI6dHJ1ZSwiZXhwaXJlX2F0IjoxNzg2OTQ2NDAwfQ&signature=EyJrdUqvKydOZltMGWcCtsIphb28n5hKgR405o9HgYk",
             backdrop: "https://raw.giteeusercontent.com/qddl/qianggeyingshi/raw/master/picture/%E6%B5%8E%E5%AE%81%E7%BB%BC%E5%90%88.jpeg",
             plot: "",
             cast: "",
