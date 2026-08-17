@@ -464,7 +464,7 @@ const app = {
             year: 1987,
             rating: 7.7,
             views: 1800000,
-            poster: "https://raw.giteeusercontent.com/qddl/qianggeyingshi/raw/master/picture/%E6%B5%8E%E5%AE%81%E7%BB%BC%E5%90%88.jpeg?metadata=eyJyIjoibWFzdGVyIiwiZnAiOiJwaWN0dXJlL-a1juWugee7vOWQiC5qcGVnIiwidWlkIjoxNDQ3MTQyMywicGlkIjozNzUzODU1NCwic3RvIjoiZ2l0LXNoYXJkaW5nLXN0by00MnQtMDAyIiwicnAiOiJyZXBvcy9jYy9hZi9jY2FmNmQ5OGQxOTBmZGMxMTRhNDhmODBkYTY2YjUxOGZjYzQ0MzRhOGQyMDIyOWFjMzU1NWU3ZjBmN2JmZjVmLmdpdCIsImlzcCI6dHJ1ZSwiZXhwaXJlX2F0IjoxNzg2OTQ2NDAwfQ&signature=EyJrdUqvKydOZltMGWcCtsIphb28n5hKgR405o9HgYk",
+            poster: "https://raw.giteeusercontent.com/qddl/qianggeyingshi/raw/master/picture/%E6%B5%8E%E5%AE%81%E7%BB%BC%E5%90%88.jpg?metadata=eyJyIjoibWFzdGVyIiwiZnAiOiJwaWN0dXJlL-a1juWugee7vOWQiC5qcGciLCJ1aWQiOjE0NDcxNDIzLCJwaWQiOjM3NTM4NTU0LCJzdG8iOiJnaXQtc2hhcmRpbmctc3RvLTQydC0wMDIiLCJycCI6InJlcG9zL2NjL2FmL2NjYWY2ZDk4ZDE5MGZkYzExNGE0OGY4MGRhNjZiNTE4ZmNjNDQzNGE4ZDIwMjI5YWMzNTU1ZTdmMGY3YmZmNWYuZ2l0IiwiaXNwIjp0cnVlLCJleHBpcmVfYXQiOjE3ODY5NTU0MDB9&signature=Iq_gcYn2RS6xBQ16UFqAQ2ZqBNEdYbR0M0C3CPHWw9k",
             backdrop: "https://raw.giteeusercontent.com/qddl/qianggeyingshi/raw/master/picture/%E6%B5%8E%E5%AE%81%E7%BB%BC%E5%90%88.jpg",
             plot: "",
             cast: "",
