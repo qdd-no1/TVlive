@@ -20,7 +20,7 @@ const app = {
     },
 
   // 模拟数据库
-    mockData:[
+   mockData:[
         {
             id: 1,
             title: "花开锦绣",
@@ -32,9 +32,9 @@ const app = {
             backdrop: "https://picsum.photos/800/400?random=1",
             plot: "豪爽重情的私盐贩子赵凌虽出身草莽，却心怀壮志，他结识了遭人诬陷私通的世家名媛小姐傅庭芸，被迫一起逃亡，二人历经家族与朝廷的重重考验，与命运抗争，终成传奇良缘。剧集改编自吱吱同名言情小说《花开锦绣》。",
             cast: "丁禹兮,邓恩熙,尤靖茹,白澍,吕晓霖,张萌,迟蓬,范诗然,范湉湉,温峥嵘,董子凡,谭凯",
-            episodes: 15,
+            episodes: 19,
             episodeUrls: {
-                1: "https://super.ffzy-online6.com/20260809/38382_1786aee5/index.m3u8",
+              1: "https://super.ffzy-online6.com/20260809/38382_1786aee5/index.m3u8",
 2: "https://super.ffzy-online6.com/20260809/38383_60c6413e/index.m3u8",
 3: "https://super.ffzy-online6.com/20260809/38384_5e2967fb/index.m3u8",
 4: "https://super.ffzy-online6.com/20260809/38397_22fa300c/index.m3u8",
@@ -48,7 +48,11 @@ const app = {
 12: "https://super.ffzy-online6.com/20260813/38716_5a462570/index.m3u8",
 13: "https://super.ffzy-online6.com/20260814/38775_cf7065dd/index.m3u8",
 14: "https://super.ffzy-online6.com/20260815/38862_3d86b21e/index.m3u8",
-15: "https://super.ffzy-online6.com/20260815/38863_552fd299/index.m3u8"
+15: "https://super.ffzy-online6.com/20260815/38863_552fd299/index.m3u8",
+16: "https://super.ffzy-online6.com/20260816/38919_ad4ccc76/index.m3u8",
+17: "https://super.ffzy-online6.com/20260816/38920_ad7f9859/index.m3u8",
+18: "https://super.ffzy-online6.com/20260816/38924_c9d53ae2/index.m3u8",
+19: "https://super.ffzy-online6.com/20260817/38974_ec04b828/index.m3u8"
             } 
         },
         {
@@ -144,12 +148,15 @@ const app = {
             backdrop: "https://img.feifeiimg.vip/upload/vod/20260814-1/092d2185678e4e1ea55ab24a446910fe.jpg",
             plot: "五星大厨许多金辛苦大半辈子，退休时衣食无忧，准备告诉儿女们自己和黄昏恋女友马小芬的婚事，还打算完婚后周游世界，哪知他幸福的晚年生活却因为小儿子被骗巨款完全乱了套。尽管法律条文认定成年孩子的债务与他没有任何连带关系，但是，为了减轻小儿子的罪行，为了一份担当，许多金卖房打工，走上“子债父偿”的艰辛路。而被骗的小儿子许小成在寻找骗子的讨债路上同样艰辛，最终他协助警察破获大案，还自己清白。尽管许多金子债父偿让家人误解，窘迫生活把他逼入死角，但他依然保持乐观的态度和做人的良心，树立了自己是“打不死的老强”的顽强形象。许多金的担当、坚韧、自强得到所有人的理解，他也闯出新天地，办起了了托老所，赢得马小芬忠贞不渝的爱情。",
             cast: "李幼斌,史兰芽,袁志博,孙桂田,马杰,迟志强,刘军",
-            episodes: 36,
+            episodes: 7,
             episodeUrls: {
                 1: "https://super.ffzy-online6.com/20260814/38789_238f9661/index.m3u8",
 2: "https://super.ffzy-online6.com/20260814/38790_b9b993f4/index.m3u8",
 3: "https://super.ffzy-online6.com/20260816/38909_b32cf553/index.m3u8",
-4: "https://super.ffzy-online6.com/20260816/38910_2b3b9fe4/index.m3u8"
+4: "https://super.ffzy-online6.com/20260816/38910_2b3b9fe4/index.m3u8",
+5: "https://super.ffzy-online6.com/20260817/38942_67c68199/index.m3u8",
+6: "https://super.ffzy-online6.com/20260818/38994_50ca3a3b/index.m3u8",
+7: "https://super.ffzy-online6.com/20260818/38995_78d0034c/index.m3u8"
             }
         },
         {
@@ -176,7 +183,7 @@ const app = {
             backdrop: "https://img.feifeiimg.vip/upload/vod/20260810-1/e74484f1acf116e76a9c227ffca32188.jpg",
             plot: "该剧讲述了改革开放初期1979年到1997年，陈一众、余高远、张丽慧、夏英杰、陆则铭五个法学院学生毕业后进入了司法领域不同的部门，在如火如荼的司法实践中见证历史、参与历史、与时俱进、不断成长的故事。",
             cast: "黄景瑜,蒋奇明,于和伟,闫佩伦,张佳宁,姜珮瑶,丁勇岱,王建国,尤勇智,宁理,成泰燊,齐奎,任程伟,朱颜曼滋,陈小艺,张帆,张国强,李洪涛,迟嘉,吴越,迟蓬,杨新鸣,宗俊涛,周野芒,胡可,胡杏儿,黄澄澄,翟小兴",
-            episodes: 36,
+            episodes: 18,
             episodeUrls: {
                 1: "https://super.ffzy-online6.com/20260810/38476_55f8c1c1/index.m3u8",
 2: "https://super.ffzy-online6.com/20260810/38477_2149347b/index.m3u8",
@@ -191,7 +198,11 @@ const app = {
 11: "https://super.ffzy-online6.com/20260814/38782_918d2d39/index.m3u8",
 12: "https://super.ffzy-online6.com/20260814/38783_2ab50703/index.m3u8",
 13: "https://super.ffzy-online6.com/20260815/38864_bed001dd/index.m3u8",
-14: "https://super.ffzy-online6.com/20260815/38865_39c5e668/index.m3u8"
+14: "https://super.ffzy-online6.com/20260815/38865_39c5e668/index.m3u8",
+15: "https://super.ffzy-online6.com/20260816/38923_0f46fe67/index.m3u8",
+16: "https://super.ffzy-online6.com/20260816/38922_8983dcdc/index.m3u8",
+17: "https://super.ffzy-online6.com/20260817/38966_92d5fa84/index.m3u8",
+18: "https://super.ffzy-online6.com/20260817/38967_d9092432/index.m3u8"
             }
         },
         {
@@ -303,7 +314,7 @@ const app = {
             year: 2025,
             rating: 8.3,
             views: 1300000,
-            poster: "https://tupian.ffeiimg.com/upload/vod/20250813-1/d6581dbe3b7a1ae92138e24ccd429ea1.jpg",
+            poster: "https://img.feifeiimg.vip/upload/vod/20250813-1/d6581dbe3b7a1ae92138e24ccd429ea1.jpg",
             backdrop: "https://picsum.photos/800/400?random=11",
             plot: "《生万物》根据荣获第三届人民文学奖的长篇小说《缱绻与决绝》改编，以鲁南农村土地变迁为背景，讲述了以宁绣绣、封大脚、费左氏为代表的宁、封、费三个家族、两代人的兴衰史。天牛庙村村民为同一片土地不断努力，是跨越多年打不散的邻里情，也是老一辈农民对土地的敬畏与依恋。",
             cast: "杨幂,欧豪,倪大红,秦海璐,邢菲,张天阳,张海宇,迟蓬,孙绍龙,林永健,蓝盈莹,赵达,宋家腾,潘之琳,艾东,于震",
@@ -373,9 +384,9 @@ const app = {
             backdrop: "https://img.feifeiimg.vip/upload/vod/20260810-1/9e2482287870fae1800f079d82ef4cae.jpg",
             plot: "陆早早突遭意外，竟穿越成民国少夫人苏沐晚，醒来，却是丈夫枪口相对、父母冤案、连环下毒……她于绝境中步步破局，与“醋精”少爷凌慎行从生死对立到情根深重，可就在浓情蜜意时，她骤然梦醒归现代，转角竟撞见那个熟悉的“他”！",
             cast: "邢昭林,方瑾,常喆宽,尹蕊,王沛然,赵悠图",
-            episodes: 36,
+            episodes: 24,
             episodeUrls: {
-            1: "https://super.ffzy-online6.com/20260810/38448_0d7f2e50/index.m3u8",
+           1: "https://super.ffzy-online6.com/20260810/38448_0d7f2e50/index.m3u8",
 2: "https://super.ffzy-online6.com/20260810/38449_b4624271/index.m3u8",
 3: "https://super.ffzy-online6.com/20260810/38450_4fedf8be/index.m3u8",
 4: "https://super.ffzy-online6.com/20260810/38451_261258fa/index.m3u8",
@@ -394,7 +405,11 @@ const app = {
 17: "https://super.ffzy-online6.com/20260815/38807_f8e10f59/index.m3u8",
 18: "https://super.ffzy-online6.com/20260815/38808_23035635/index.m3u8",
 19: "https://super.ffzy-online6.com/20260816/38893_c1d6eb5a/index.m3u8",
-20: "https://super.ffzy-online6.com/20260816/38894_dea4e200/index.m3u8"
+20: "https://super.ffzy-online6.com/20260816/38894_dea4e200/index.m3u8",
+21: "https://super.ffzy-online6.com/20260817/38943_97b9c4da/index.m3u8",
+22: "https://super.ffzy-online6.com/20260817/38944_79d6e374/index.m3u8",
+23: "https://super.ffzy-online6.com/20260818/38996_19349730/index.m3u8",
+24: "https://super.ffzy-online6.com/20260818/38997_5606c438/index.m3u8"
             }
         },
 
@@ -410,8 +425,39 @@ const app = {
             backdrop: "https://img.feifeiimg.vip/upload/vod/20260729-1/20893c4673f6a29047161dac1354b97f.jpg",
             plot: "改编自行烟烟的同名小说。孟廷辉，大平王朝有史以来个以女子进士科三元及第入翰林院的奇女子。十年前的她被他从死人堆里救出来，蓬头垢面口齿不清。十年后的她才学满腹、冠盖众人，于女子进士科上大方异彩，成为了朝中二十余年来令人瞩目的女官。她处事圆滑，心机多端，为了往上爬而不择手段，视飞黄腾达为人生目标，数年来从一个小小的正六品翰林院修撰一路升为与诸多老臣平起平坐的参知政事，被朝中清议冠以奸佞之名而不在乎，行事苛酷阴狠、对人不留余地，令一朝上下人人畏恶，可却没有一个人懂得她这么多年是如何过来的，更没有一个人知晓她心里究竟想的是什么。那一个龙座高高在上，那一个男人聛睨天下，她心甘情愿地伏在他座下，看他固江山，看他养百姓，看他治太平，看他一步步成为大平王朝有史以来最强悍的一个帝王。当年他救了她，现如今她报答他，就算是成为他一世帝业的垫脚石也无怨无悔，可她算尽了一切，却唯独没有算到，其实他也爱着她。一个是尽享天下盛名的英明雄主，一个是背负千古骂名的奸佞之臣，他们的情路注定布满荆棘。",
             cast: "李吴谨言,陈哲远,梁永棋,赵昭仪,张南,郭品超,盛一伦,吴岱融,黄祖鑫,宋麒",
-            episodes: 36,
-            episodeUrls: {
+            episodes: 32,
+            episodeUrls: {1: "https://super.ffzy-online6.com/20260729/37593_07da625d/index.m3u8",
+2: "https://super.ffzy-online6.com/20260729/37594_87108d9b/index.m3u8",
+3: "https://super.ffzy-online6.com/20260729/37595_8d9efdc1/index.m3u8",
+4: "https://super.ffzy-online6.com/20260729/37596_117239c3/index.m3u8",
+5: "https://super.ffzy-online6.com/20260729/37602_d0f1a9b2/index.m3u8",
+6: "https://super.ffzy-online6.com/20260729/37603_dc1cbc41/index.m3u8",
+7: "https://super.ffzy-online6.com/20260730/37678_352c158d/index.m3u8",
+8: "https://super.ffzy-online6.com/20260730/37679_6a307655/index.m3u8",
+9: "https://super.ffzy-online6.com/20260731/37749_47c163fd/index.m3u8",
+10: "https://super.ffzy-online6.com/20260801/37880_fbcd0663/index.m3u8",
+11: "https://super.ffzy-online6.com/20260802/37937_b4d84bec/index.m3u8",
+12: "https://super.ffzy-online6.com/20260803/37975_44ee138c/index.m3u8",
+13: "https://super.ffzy-online6.com/20260803/37976_45ff734c/index.m3u8",
+14: "https://super.ffzy-online6.com/20260804/38020_e04691a4/index.m3u8",
+15: "https://super.ffzy-online6.com/20260804/38021_7856e1f1/index.m3u8",
+16: "https://super.ffzy-online6.com/20260805/38093_06272ac1/index.m3u8",
+17: "https://super.ffzy-online6.com/20260805/38094_3fcb92a0/index.m3u8",
+18: "https://super.ffzy-online6.com/20260806/38190_cb45a111/index.m3u8",
+19: "https://super.ffzy-online6.com/20260806/38191_457600e8/index.m3u8",
+20: "https://super.ffzy-online6.com/20260807/38274_151af9b5/index.m3u8",
+21: "https://super.ffzy-online6.com/20260808/38351_6a0f5ef2/index.m3u8",
+22: "https://super.ffzy-online6.com/20260809/38377_72824049/index.m3u8",
+23: "https://super.ffzy-online6.com/20260810/38435_e1166024/index.m3u8",
+24: "https://super.ffzy-online6.com/20260810/38436_4dfa8c1c/index.m3u8",
+25: "https://super.ffzy-online6.com/20260811/38512_ed372ed3/index.m3u8",
+26: "https://super.ffzy-online6.com/20260811/38513_aa6ad16a/index.m3u8",
+27: "https://super.ffzy-online6.com/20260812/38592_f4d9387d/index.m3u8",
+28: "https://super.ffzy-online6.com/20260812/38605_92a404e3/index.m3u8",
+29: "https://super.ffzy-online6.com/20260812/38606_e0980b73/index.m3u8",
+30: "https://super.ffzy-online6.com/20260812/38607_fb3176bf/index.m3u8",
+31: "https://super.ffzy-online6.com/20260812/38608_394b2ea0/index.m3u8",
+32: "https://super.ffzy-online6.com/20260812/38609_4eefea4f/index.m3u8"
                 
             }
         },
@@ -426,7 +472,7 @@ const app = {
             backdrop: "https://img.feifeiimg.vip/upload/vod/20260701-1/b547ac4dc1a68681b86c74419a5f880b.jpg",
             plot: "出品单位：广东共赢影视传媒有限公司、星辉（佛山）影视产业有限公司制作公司：广东辉映影视传媒有限公司出品人：霍志健、周伟全联合出品人：朱牧言、姚忠、Mr豆总制片人：邵明江艺术指导：张腾之音乐指导：张宏光、程矛非遗顾问：欧阳凤婷制片人：李功斌、黄彩丽、黄莉联合制片人：刘昕、周晓茜、潘光俊、姚嘉元导演：保密编剧：云霄播放平台：腾讯视频选角团队：一丁选角选角导演：小宇演员统筹：王孜繁演员副导演：小天项目类型：古装、轻喜 …",
             cast: "蒙恩,胡丹丹",
-            episodes: 36,
+            episodes: 24,
             episodeUrls: {
             1: "https://svip.feifei-play.com/20260701/46285_47ebca26/index.m3u8",
 2: "https://svip.feifei-play.com/20260701/46286_dcdbcb38/index.m3u8",
@@ -464,10 +510,10 @@ const app = {
             year: 1987,
             rating: 7.7,
             views: 1800000,
-            poster: "https://raw.giteeusercontent.com/qddl/qianggeyingshi/raw/master/picture/%E6%B5%8E%E5%AE%81%E7%BB%BC%E5%90%88.jpg?metadata=eyJyIjoibWFzdGVyIiwiZnAiOiJwaWN0dXJlL-a1juWugee7vOWQiC5qcGciLCJ1aWQiOjE0NDcxNDIzLCJwaWQiOjM3NTM4NTU0LCJzdG8iOiJnaXQtc2hhcmRpbmctc3RvLTQydC0wMDIiLCJycCI6InJlcG9zL2NjL2FmL2NjYWY2ZDk4ZDE5MGZkYzExNGE0OGY4MGRhNjZiNTE4ZmNjNDQzNGE4ZDIwMjI5YWMzNTU1ZTdmMGY3YmZmNWYuZ2l0IiwiaXNwIjp0cnVlLCJleHBpcmVfYXQiOjE3ODY5NTU0MDB9&signature=Iq_gcYn2RS6xBQ16UFqAQ2ZqBNEdYbR0M0C3CPHWw9k",
-            backdrop: "https://raw.giteeusercontent.com/qddl/qianggeyingshi/raw/master/picture/%E6%B5%8E%E5%AE%81%E7%BB%BC%E5%90%88.jpg",
-            plot: "",
-            cast: "",
+            poster: "https://nwwp.xbaicai.qzz.io/cloud_file/%E6%B5%8E%E5%AE%81%E7%BB%BC%E5%90%88_1787025213.jpg",
+            backdrop: "https://nwwp.xbaicai.qzz.io/cloud_file/51991244638952939251754320661230_edit_194217640928697_1786451176.jpg",
+            plot: "济宁电视台新闻综合台",
+            cast: "济宁市",
             videoUrl: "https://srs.jnnews.tv/video/JTV-1/index.m3u8"
         },
 
@@ -556,6 +602,7 @@ const app = {
             }
         }
     ],
+
 
     // 初始化
     init: function() {
