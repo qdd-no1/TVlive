@@ -29,6 +29,35 @@
             width:100%;
             max-width:1200px;
         }
+        /* ===== 全屏模式布局修复：确保视频与进度条完整显示 ===== */
+        #player-modal > div:fullscreen,
+        #player-modal > div:-webkit-full-screen {
+            max-width: none;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            margin: 0;
+        }
+        /* 全屏时视频区域弹性填充剩余空间 */
+        #player-modal > div:fullscreen .player-wrap,
+        #player-modal > div:-webkit-full-screen .player-wrap {
+            flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        /* 全屏时视频按原始比例缩放，不超出可用区域 */
+        #player-modal > div:fullscreen #main-player,
+        #player-modal > div:-webkit-full-screen #main-player {
+            width: auto;
+            height: auto;
+            max-width: 100%;
+            max-height: 100%;
+            aspect-ratio: auto;
+        }
         #main-player{
             width:100%;
             height:auto;
@@ -48,63 +77,29 @@
             overflow: hidden;
             z-index: 10;
             pointer-events: none; /* 不阻挡鼠标操作视频控件 */
-        } 
-
-
-
+        }
         .video-marquee-text {
-    /* 总时长20分钟，无限循环 */
-    animation: marqueeCycle 1200s infinite;
-    
-    white-space: nowrap;
-    font-size: 22px;
-    font-weight: bold;
-    color: #ff3333;
-    background: transparent;
-    text-shadow: 2px 2px 4px #000000;
-    
-    /* 初始状态：隐藏在右侧屏幕外，准备进入 */
-    transform: translateX(100vw); 
-    /* 确保元素占据空间但不影响布局，可根据需要调整 display */
-    display: inline-block; 
-}
-
-@keyframes marqueeCycle {
-    /* 
-       时间轴计算：
-       滚动耗时：22s
-       总周期：1200s
-       滚动占比：22 / 1200 ≈ 1.83%
-    */
-
-    /* 0% ~ 1.83%：执行滚动动画 */
-    0% {
-        transform: translateX(100vw); /* 从右侧屏幕外开始 */
-        opacity: 1;
-    }
-    1.83% {
-        transform: translateX(-100%); /* 滚动到左侧屏幕外 */
-        opacity: 1;
-    }
-
-    /* 1.83% ~ 100%：保持隐藏或在起点等待，避免用户看到空白或错误位置 */
-    /* 这里选择直接跳回起点并隐藏，直到下一个周期开始 */
-    1.84% {
-        transform: translateX(100vw); /* 瞬间复位到右侧起点 */
-        opacity: 0; /* 隐藏文字，避免复位过程被看见 */
-    }
-    99.99% {
-        transform: translateX(100vw); /* 保持复位状态 */
-        opacity: 0;
-    }
-    100% {
-        transform: translateX(100vw); /* 周期结束，准备下一次可见 */
-        opacity: 1;
-    }
-}
-
-
-
+            white-space: nowrap;
+            font-size: 22px;
+            font-weight: bold;
+            color: #ff3333;
+            background: transparent;
+            text-shadow: 2px 2px 4px #000000;
+            /* 默认隐藏在右侧屏幕外，由 JS 主动触发滚动 */
+            transform: translateX(100vw);
+            opacity: 0;
+            display: inline-block;
+            will-change: transform, opacity;
+        }
+        /* JS 触发时添加该类，执行一次滚动 */
+        .video-marquee-text.scrolling {
+            animation: marqueeScroll 12s linear;
+        }
+        @keyframes marqueeScroll {
+            0%   { transform: translateX(100vw);  opacity: 1; }
+            95%  { transform: translateX(-100%);  opacity: 1; }
+            100% { transform: translateX(-100%);  opacity: 0; }
+        }
         .poster-card:hover .type-badge{
             transform: translateY(0);
             opacity: 1;
@@ -346,7 +341,11 @@ const app = {
         currentDetailItem: null,
         heroCarouselList: [],
         heroCarouselIndex: 0,
-        heroCarouselTimer: null
+        heroCarouselTimer: null,
+        /* ---- 视频跑马灯状态 ---- */
+        marqueePoints: [600, 1800, 2400], // 10分钟、30分钟、40分钟（秒）
+        marqueeTriggered: {},             // 记录每个时间点是否已触发
+        marqueeInitialShown: false        // 开播时首次滚动是否已显示
     },
     mockData : [
     {
@@ -1397,7 +1396,7 @@ const app = {
         "cast": "张瑞希,田惠媛,薛正焕,周清晨,尹海英,刘泰雄,张世铉,孙星允,徐权顺,崔载元",
         "needPassword": false,
         "playPassword": "668899",
-        "episodes": 20,
+        "episodes": 22,
         "totalEpisodes": 36,
         "episodeUrls": [
             "https://vod.ffzy-bofang.com/20260811/1829_aa2a7737/index.m3u8",
@@ -1419,7 +1418,9 @@ const app = {
             "https://vod.ffzy-bofang.com/20260902/2679_9813b270/index.m3u8",
             "https://vod.ffzy-bofang.com/20260903/2723_c315f032/index.m3u8",
             "https://vod.ffzy-bofang.com/20260904/2750_fc192b0c/index.m3u8",
-            "https://vod.ffzy-bofang.com/20260905/2805_564645fb/index.m3u8"
+            "https://vod.ffzy-bofang.com/20260905/2805_564645fb/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260908/2904_b8b9c74a/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260909/2930_6624b6d8/index.m3u8"
         ]
     },
     {
@@ -1509,7 +1510,7 @@ const app = {
         "cast": "井柏然,孙千,刘小北,齐天晴,张晔子,宁心,赵振宇,张优,彭杨,郭晓婷,李川",
         "needPassword": false,
         "playPassword": "668899",
-        "episodes": 19,
+        "episodes": 21,
         "totalEpisodes": 36,
         "episodeUrls": [
             "https://vip.ffzy-plays.com/20260826/57469_ab3af36d/index.m3u8",
@@ -1530,7 +1531,9 @@ const app = {
             "https://vip.ffzy-plays.com/20260904/57888_aead8b28/index.m3u8",
             "https://vip.ffzy-plays.com/20260905/57931_4ad9a489/index.m3u8",
             "https://vip.ffzy-plays.com/20260906/57964_1411542b/index.m3u8",
-            "https://vip.ffzy-plays.com/20260907/58002_3573f776/index.m3u8"
+            "https://vip.ffzy-plays.com/20260907/58002_3573f776/index.m3u8",
+            "https://vip.ffzy-plays.com/20260908/58050_ef16f85d/index.m3u8",
+            "https://vip.ffzy-plays.com/20260909/58101_3921452f/index.m3u8"
         ]
     },
     {
@@ -2809,7 +2812,7 @@ const app = {
         "cast": "关晓彤,王子奇,刘琳,郭涛,郭晓东,元清,冷纪元,黑泽,霍青",
         "needPassword": false,
         "playPassword": "668899",
-        "episodes": 7,
+        "episodes": 9,
         "totalEpisodes": 26,
         "episodeUrls": [
             "https://super.ffzy-online6.com/20260903/40227_816826c1/index.m3u8",
@@ -2818,7 +2821,9 @@ const app = {
             "https://super.ffzy-online6.com/20260904/40289_1b8833c5/index.m3u8",
             "https://super.ffzy-online6.com/20260904/40290_fafcb194/index.m3u8",
             "https://super.ffzy-online6.com/20260905/40336_c3d13b69/index.m3u8",
-            "https://super.ffzy-online6.com/20260906/40375_48bbfd24/index.m3u8"
+            "https://super.ffzy-online6.com/20260906/40375_48bbfd24/index.m3u8",
+            "https://super.ffzy-online6.com/20260907/40483_0e4b276a/index.m3u8",
+            "https://super.ffzy-online6.com/20260908/40546_67609c6c/index.m3u8"
         ]
     },
     {
@@ -2835,8 +2840,8 @@ const app = {
         "cast": "贾冰,田嘉瑞,闫佩伦,孔令美,包文婧,土豆,林俊毅,杨皓宇,李萍,周德华,杨雨光,刘桦,赵龙豪,黄小蕾,张明健,李至强,马诗红,张华,张天其,梁颂晴,刘佳颖,文松,王喳喳,房岩,唐家三少",
         "needPassword": false,
         "playPassword": "668899",
-        "episodes": 11,
-        "totalEpisodes": 30,
+        "episodes": 15,
+        "totalEpisodes": 15,
         "episodeUrls": [
             "https://super.ffzy-online6.com/20260831/39987_4a2ad15a/index.m3u8",
             "https://super.ffzy-online6.com/20260831/39988_7b3f65a6/index.m3u8",
@@ -2848,7 +2853,11 @@ const app = {
             "https://super.ffzy-online6.com/20260903/40222_498a0fe7/index.m3u8",
             "https://super.ffzy-online6.com/20260904/40291_27424f3a/index.m3u8",
             "https://super.ffzy-online6.com/20260905/40339_870cdc09/index.m3u8",
-            "https://super.ffzy-online6.com/20260906/40374_f593b9ea/index.m3u8"
+            "https://super.ffzy-online6.com/20260906/40374_f593b9ea/index.m3u8",
+            "https://super.ffzy-online6.com/20260908/40502_91edf991/index.m3u8",
+            "https://super.ffzy-online6.com/20260908/40503_51fb1804/index.m3u8",
+            "https://super.ffzy-online6.com/20260908/40504_99b824ed/index.m3u8",
+            "https://super.ffzy-online6.com/20260908/40505_4e270925/index.m3u8"
         ]
     },
     {
@@ -2923,7 +2932,7 @@ const app = {
         "cast": "庞博,郭麒麟,黄渤,马思纯",
         "needPassword": false,
         "playPassword": "668899",
-        "episodes": 96,
+        "episodes": 98,
         "totalEpisodes": 192,
         "episodeUrls": [
             "https://vod.ffzy-bofang.com/20260702/354_8dd48d6a/index.m3u8",
@@ -3021,7 +3030,9 @@ const app = {
             "https://vod.ffzy-bofang.com/20260904/2784_aeefb050/index.m3u8",
             "https://vod.ffzy-bofang.com/20260905/2823_46f76a4b/index.m3u8",
             "https://vod.ffzy-bofang.com/20260905/2824_b030afbb/index.m3u8",
-            "https://vod.ffzy-bofang.com/20260906/2856_1397386b/index.m3u8"
+            "https://vod.ffzy-bofang.com/20260906/2856_1397386b/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260907/2884_780965ae/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260907/2885_e9874147/index.m3u8"
         ]
     },
     {
@@ -3169,34 +3180,35 @@ const app = {
         "cast": "孙楠,余文乐,刘畊宏,郭晓东,李光洁,邵兵,邵子恒,王传君,小沈阳,张彬彬,阿云嘎,齐思钧,王赫野,姚琛,曹骏,唐九洲,颜安,王以太,王啸坤,陈若轩,米卡,张睿,张卓尔,叶润泽,曾辉,满江,艾热,管健嘉晨,欢子",
         "needPassword": false,
         "playPassword": "668899",
-        "episodes": 24,
+        "episodes": 26,
         "totalEpisodes": 30,
         "episodeUrls": [
-            "https://vod.ffzy-bofang.com/share/299570476c6f0309545110c592b6a63b",
-            "https://vod.ffzy-bofang.com/share/4abe17a1c80cbdd2aa241b70840879de",
-            "https://vod.ffzy-bofang.com/share/06964dce9addb1c5cb5d6e3d9838f733",
-            "https://vod.ffzy-bofang.com/share/c5b2cebf15b205503560c4e8e6d1ea78",
-            "https://vod.ffzy-bofang.com/share/1f4fe6a4411edc2ff625888b4093e917",
-            "https://vod.ffzy-bofang.com/share/cbef46321026d8404bc3216d4774c8a9",
-            "https://vod.ffzy-bofang.com/share/c3535febaff29fcb7c0d20cbe94391c7",
-            "https://vod.ffzy-bofang.com/share/1a0a283bfe7c549dee6c638a05200e32",
-            "https://vod.ffzy-bofang.com/share/a29d1598024f9e87beab4b98411d48ce",
-            "https://vod.ffzy-bofang.com/share/01931a6925d3de09e5f87419d9d55055",
-            "https://vod.ffzy-bofang.com/share/51174add1c52758f33d414ceaf3fe6ba",
-            "https://vod.ffzy-bofang.com/share/a70dc40477bc2adceef4d2c90f47eb82",
-            "https://vod.ffzy-bofang.com/share/761c7920f470038d4c8a619c79eddd62",
-            "https://vod.ffzy-bofang.com/share/273448411df1962cba1db6c05b3213c9",
-            "https://vod.ffzy-bofang.com/share/70c445ee64b1ed0583367a12a79a9ef2",
-            "https://vod.ffzy-bofang.com/share/c5dc3e08849bec07e33ca353de62ea04",
-            "https://vod.ffzy-bofang.com/share/b5baa9c23ac3e015ad287b17a3d4afa3",
-            "https://vod.ffzy-bofang.com/share/7876acb66640bad41f1e1371ef30c180",
-            "https://vod.ffzy-bofang.com/share/d790c9e6c0b5e02c87b375e782ac01bc",
-            "https://vod.ffzy-bofang.com/share/361440528766bbaaaa1901845cf4152b",
-            "https://vod.ffzy-bofang.com/share/09b69adcd7cbae914c6204984097d2da",
-            "https://vod.ffzy-bofang.com/share/b139aeda1c2914e3b579aafd3ceeb1bd",
-            "https://vod.ffzy-bofang.com/share/46b2644cbdf489fac0e2d192212d206d",
-            "https://vod.ffzy-bofang.com/share/0738069b244a1c43c83112b735140a16",
-            "https://vod.ffzy-bofang.com/share/eb9fc349601c69352c859c1faa287874"
+            "https://vod.ffzy-bofang.com/20260809/1772_29957047/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260809/1773_4abe17a1/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260814/1997_06964dce/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260814/1998_c5b2cebf/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260816/2074_1f4fe6a4/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260816/2075_cbef4632/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260817/2110_c3535feb/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260817/2111_1a0a283b/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260817/2112_a29d1598/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260817/2113_01931a69/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260817/2114_51174add/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260822/2320_a70dc404/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260822/2321_761c7920/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260823/2331_27344841/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260827/2464_70c445ee/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260828/2517_c5dc3e08/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260829/2559_b5baa9c2/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260830/2590_7876acb6/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260903/2732_36144052/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260905/2827_09b69adc/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260905/2828_b139aeda/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260905/2829_46b2644c/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260905/2830_0738069b/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260906/2846_eb9fc349/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260908/2911_ef67f7c2/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260909/2939_6c990b7a/index.m3u8"
         ]
     },
     {
@@ -3213,7 +3225,7 @@ const app = {
         "cast": "",
         "needPassword": false,
         "playPassword": "668899",
-        "episodes": 49,
+        "episodes": 51,
         "totalEpisodes": 80,
         "episodeUrls": [
             "https://vip.ffzy-play9.com/20260721/45130_20ded8fd/index.m3u8",
@@ -3264,7 +3276,9 @@ const app = {
             "https://vod.ffzy-bofang.com/20260904/2752_b2ea5e97/index.m3u8",
             "https://vod.ffzy-bofang.com/20260905/2809_b4fd1d2c/index.m3u8",
             "https://vod.ffzy-bofang.com/20260906/2844_6f1d0705/index.m3u8",
-            "https://vod.ffzy-bofang.com/20260907/2870_327708dd/index.m3u8"
+            "https://vod.ffzy-bofang.com/20260907/2870_327708dd/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260908/2906_9e82757e/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260909/2933_25766f01/index.m3u8"
         ]
     },
     {
@@ -3836,13 +3850,14 @@ const app = {
         "cast": "刘涛,郑恺,欧阳娜娜",
         "needPassword": false,
         "playPassword": "668899",
-        "episodes": 4,
+        "episodes": 5,
         "totalEpisodes": 10,
         "episodeUrls": [
             "https://vod.ffzy-bofang.com/20260818/2136_4e62e752/index.m3u8",
             "https://vod.ffzy-bofang.com/20260818/2133_c902b497/index.m3u8",
             "https://vod.ffzy-bofang.com/20260825/2400_03cf8717/index.m3u8",
-            "https://vod.ffzy-bofang.com/20260901/2651_148260a1/index.m3u8"
+            "https://vod.ffzy-bofang.com/20260901/2651_148260a1/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260908/2910_dba31bb5/index.m3u8"
         ]
     },
     {
@@ -4347,6 +4362,640 @@ const app = {
         "playPassword": "668899",
         "duration": "93 分钟",
         "videoUrl": "https://vip.ffzy-play6.com/20250429/35276_40b28f4f/index.m3u8"
+    },
+    {
+        "id": 129,
+        "title": "这都不是事儿",
+        "mainType": "tv",
+        "subCategory": "内地剧",
+        "year": "2026",
+        "rating": 7.2,
+        "views": 6000000,
+        "poster": "https://img.feifeiimg.vip/upload/vod/20260908-1/5e43ff62640b7d7f722d1e6a4b3b20b1.jpg",
+        "backdrop": "https://img.feifeiimg.vip/upload/vod/20260908-1/5e43ff62640b7d7f722d1e6a4b3b20b1.jpg",
+        "plot": "讲述郝南（余钦南 饰）创办“点子公司”，带领一群性格迥异的伙伴，专门帮助客户解决各种人生难题的故事。面对千奇百怪的委托，他们用夸张又温暖的方式化解矛盾，在爆笑任务中收获成长，帮助他人，也重新认识自己。",
+        "cast": "乐珊,刘银银,余钦南,秦龙,宋晓峰,周晓鸥,贾冰",
+        "needPassword": false,
+        "playPassword": "668899",
+        "episodes": 12,
+        "totalEpisodes": 12,
+        "episodeUrls": [
+            "https://vip.ffzy-plays.com/20260908/58051_ae1f02f7/index.m3u8",
+            "https://vip.ffzy-plays.com/20260908/58052_f18ce994/index.m3u8",
+            "https://vip.ffzy-plays.com/20260908/58053_83e24b8e/index.m3u8",
+            "https://vip.ffzy-plays.com/20260908/58054_f3665a02/index.m3u8",
+            "https://vip.ffzy-plays.com/20260908/58055_9b0c28aa/index.m3u8",
+            "https://vip.ffzy-plays.com/20260908/58056_2defa0c9/index.m3u8",
+            "https://vip.ffzy-plays.com/20260908/58057_47233cad/index.m3u8",
+            "https://vip.ffzy-plays.com/20260908/58058_5ce6577c/index.m3u8",
+            "https://vip.ffzy-plays.com/20260908/58059_8defc2ba/index.m3u8",
+            "https://vip.ffzy-plays.com/20260908/58060_0cbe8393/index.m3u8",
+            "https://vip.ffzy-plays.com/20260908/58061_f593c7d1/index.m3u8",
+            "https://vip.ffzy-plays.com/20260908/58062_243c7c0a/index.m3u8"
+        ]
+    },
+    {
+        "id": 130,
+        "title": "家庭关系证明书",
+        "mainType": "tv",
+        "subCategory": "日韩剧",
+        "year": "2026",
+        "rating": 6.5,
+        "views": 680000,
+        "poster": "https://img.feifeiimg.vip/upload/vod/20260707-1/b8c602f20bbd0e0401cf0691a6cac691.jpg",
+        "backdrop": "https://img.feifeiimg.vip/upload/vod/20260707-1/b8c602f20bbd0e0401cf0691a6cac691.jpg",
+        "plot": "本剧讲述的是从出生瞬间开始就被打上家庭崩溃烙印的一个孩子和面对冷酷的偏见和命运，重新找回自己人生的女性故事。",
+        "cast": "朴世荣,韩高恩,林志恩,成伊言,朴率拉,徐道永,全胜彬",
+        "needPassword": false,
+        "playPassword": "668899",
+        "episodes": 46,
+        "totalEpisodes": 60,
+        "episodeUrls": [
+            "https://vod.ffzy-bofang.com/20260707/513_3dc4876f/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260708/573_e5f6ad6c/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260709/613_f29c21d4/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260710/649_55b37c5c/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260713/767_f2201f51/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260714/790_2dace78f/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260715/846_84f7e699/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260716/871_aeb3135b/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260717/925_7fa732b5/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260721/1043_b9141aff/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260722/1071_1b0114c5/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260722/1100_1e6e0a04/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260723/1145_feab05aa/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260724/1177_83f97f48/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260727/1285_944bdd96/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260728/1313_f0969691/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260729/1364_effc299a/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260730/1403_4edaa105/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260731/1438_db6ebd05/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260803/1546_aff0a6a4/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260804/1573_a1afc58c/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260805/1605_f18a6d1c/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260806/1657_a40511ca/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260807/1716_66be31e4/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260810/1822_0e087ec5/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260811/1857_a3545bd7/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260812/1901_d54e99a6/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260813/1950_03e7d2eb/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260814/1983_1e4d3617/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260818/2119_1b5230e3/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260818/2161_333ac5d9/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260820/2205_06d5ae10/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260820/2235_b0b79da5/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260822/2280_dc16622d/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260824/2386_99f59c08/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260825/2414_cb2c2041/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260828/2495_33bb8372/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260828/2496_12ffb096/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260828/2539_2aedcba6/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260831/2639_09a5e2a1/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260901/2668_5ac8bb8a/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260902/2702_2e7ceec8/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260903/2742_78f7d96e/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260904/2787_2e0bff75/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260907/2899_332647f4/index.m3u8",
+            "https://vod.ffzy-bofang.com/20260908/2920_465636eb/index.m3u8"
+        ]
+    },
+    {
+        "id": 131,
+        "title": "风，带有香气",
+        "mainType": "tv",
+        "subCategory": "日韩剧",
+        "year": "2026",
+        "rating": 5.5,
+        "views": 680000,
+        "poster": "https://img.feifeiimg.vip/upload/vod/20260330-1/1fd94969811b8b4964e65803300142d4.jpg",
+        "backdrop": "https://img.feifeiimg.vip/upload/vod/20260330-1/1fd94969811b8b4964e65803300142d4.jpg",
+        "plot": "本剧以田中光著作《明治的南丁格尔 大关和物语》为原案，取材自日本首位专业女护士大关和与铃木雅的真实经历，描绘了她们推动护士注册制度、设立派出看护妇会协助防疫的历程。明治18年，日本首个护士培训学校成立。坎坷命运下早成单亲母亲的一之濑凛（见上爱 饰），与自幼被遗弃、在教会庇护下长大的大家直美（上坂树里 饰），在这里命运般相遇。她们与同学们一同接受尚在摸索中的护理教育，思索“护理是什么”“面对病人意味着什么”。毕业后，凛和直美各自经历被逐出岗位、卷入事件等波折，却在霍乱与痢疾肆虐之时再次携手，直面瘟疫。",
+        "cast": "见上爱,上坂树里,水野美纪,早坂美海,小林隆,小林虎之介,津崎史郎,岩瀬顕子,三浦贵大,根岸季衣,大岛美幸,义达祐未,たくや,原田泰造,北村一辉,佐野晶哉,藤原季节,林裕太,坂东弥十郎,内田慈,小倉史也,片冈鹤太郎,松金米子,广冈由里子,春海四方,多部未华子,高岛政宏,二田絢乃,中田青渚,井上向日葵,丸山礼,研直子,生田绘梨花,菊池亚希子,中井友望,木越明,原嶋凛,玄理,伊势志摩,古川雄大,坂口涼太郎,平野生成,森田甘路,猫背椿,饭尾和树,若林时英,村上穂乃佳,东野绚香,大河原次郎,野添义弘,筒井道隆,仲",
+        "needPassword": false,
+        "playPassword": "668899",
+        "episodes": 118,
+        "totalEpisodes": 160,
+        "episodeUrls": [
+            "https://svip.feifei-play.com/20260330/40597_66f0212a/index.m3u8",
+            "https://svip.feifei-play.com/20260331/40690_50a41579/index.m3u8",
+            "https://svip.feifei-play.com/20260401/40755_98d18f06/index.m3u8",
+            "https://svip.feifei-play.com/20260402/40841_c99d191b/index.m3u8",
+            "https://svip.feifei-play.com/20260403/40901_bd3f1eb5/index.m3u8",
+            "https://svip.feifei-play.com/20260406/41078_13c5761f/index.m3u8",
+            "https://svip.feifei-play.com/20260407/41140_eeeecc25/index.m3u8",
+            "https://svip.feifei-play.com/20260408/41212_dada3093/index.m3u8",
+            "https://svip.feifei-play.com/20260409/41266_8db1b50e/index.m3u8",
+            "https://svip.feifei-play.com/20260410/41347_10489e28/index.m3u8",
+            "https://svip.feifei-play.com/20260413/41535_b5c4df4f/index.m3u8",
+            "https://svip.feifei-play.com/20260414/41602_0873eb83/index.m3u8",
+            "https://svip.feifei-play.com/20260415/41688_e738b4d0/index.m3u8",
+            "https://svip.feifei-play.com/20260416/41791_52cb0a52/index.m3u8",
+            "https://svip.feifei-play.com/20260417/41849_3d506847/index.m3u8",
+            "https://svip.feifei-play.com/20260420/41989_02fcc1b3/index.m3u8",
+            "https://svip.feifei-play.com/20260421/42058_c2a79fe3/index.m3u8",
+            "https://svip.feifei-play.com/20260422/42128_d4cb7487/index.m3u8",
+            "https://svip.feifei-play.com/20260423/42208_3e190a43/index.m3u8",
+            "https://svip.feifei-play.com/20260424/42275_9d1e3e75/index.m3u8",
+            "https://svip.feifei-play.com/20260427/42422_f3219629/index.m3u8",
+            "https://svip.feifei-play.com/20260428/42505_3c6e64ee/index.m3u8",
+            "https://svip.feifei-play.com/20260429/42583_ef5b0acc/index.m3u8",
+            "https://svip.feifei-play.com/20260430/42640_6a0d1066/index.m3u8",
+            "https://svip.feifei-play.com/20260501/42699_c6e98355/index.m3u8",
+            "https://svip.feifei-play.com/20260504/42817_1e012f8c/index.m3u8",
+            "https://svip.feifei-play.com/20260505/42865_f8b1611e/index.m3u8",
+            "https://svip.feifei-play.com/20260506/42913_1768bc8c/index.m3u8",
+            "https://svip.feifei-play.com/20260507/42962_e6b7a46f/index.m3u8",
+            "https://svip.feifei-play.com/20260508/43028_8935ea08/index.m3u8",
+            "https://svip.feifei-play.com/20260511/43167_ba66d1b1/index.m3u8",
+            "https://svip.feifei-play.com/20260512/43223_bc15433f/index.m3u8",
+            "https://svip.feifei-play.com/20260513/43301_fc51f566/index.m3u8",
+            "https://svip.feifei-play.com/20260514/43364_07d9152e/index.m3u8",
+            "https://svip.feifei-play.com/20260515/43440_d7c93750/index.m3u8",
+            "https://svip.feifei-play.com/20260518/43655_a8c050c6/index.m3u8",
+            "https://svip.feifei-play.com/20260519/43708_28791571/index.m3u8",
+            "https://svip.feifei-play.com/20260520/43755_5e3196bd/index.m3u8",
+            "https://svip.feifei-play.com/20260521/43824_38079fb5/index.m3u8",
+            "https://svip.feifei-play.com/20260523/43914_1ca24fd4/index.m3u8",
+            "https://svip.feifei-play.com/20260525/44025_5a854617/index.m3u8",
+            "https://svip.feifei-play.com/20260526/44094_2ba87eec/index.m3u8",
+            "https://svip.feifei-play.com/20260527/44167_2f893e83/index.m3u8",
+            "https://svip.feifei-play.com/20260528/44237_348c32d6/index.m3u8",
+            "https://svip.feifei-play.com/20260529/44330_de5217ec/index.m3u8",
+            "https://svip.feifei-play.com/20260601/44475_9e63b0eb/index.m3u8",
+            "https://svip.feifei-play.com/20260602/44536_146777c2/index.m3u8",
+            "https://svip.feifei-play.com/20260604/44653_5a4ee76e/index.m3u8",
+            "https://svip.feifei-play.com/20260604/44654_bb5e4f29/index.m3u8",
+            "https://svip.feifei-play.com/20260605/44718_06c9894f/index.m3u8",
+            "https://svip.feifei-play.com/20260608/44858_6e1604e3/index.m3u8",
+            "https://svip.feifei-play.com/20260609/44918_1db09dff/index.m3u8",
+            "https://svip.feifei-play.com/20260610/44996_88643858/index.m3u8",
+            "https://svip.feifei-play.com/20260611/45075_05b07871/index.m3u8",
+            "https://svip.feifei-play.com/20260612/45145_51edcfc8/index.m3u8",
+            "https://svip.feifei-play.com/20260615/45295_d6b940b9/index.m3u8",
+            "https://svip.feifei-play.com/20260616/45346_7f9282a8/index.m3u8",
+            "https://svip.feifei-play.com/20260617/45409_1accc1c9/index.m3u8",
+            "https://svip.feifei-play.com/20260618/45460_4ee285c1/index.m3u8",
+            "https://svip.feifei-play.com/20260619/45535_1079cb15/index.m3u8",
+            "https://svip.feifei-play.com/20260622/45666_56363c2b/index.m3u8",
+            "https://svip.feifei-play.com/20260623/45733_dd921d82/index.m3u8",
+            "https://svip.feifei-play.com/20260624/45808_c9128edb/index.m3u8",
+            "https://svip.feifei-play.com/20260625/45867_f1ea1dba/index.m3u8",
+            "https://svip.feifei-play.com/20260629/46160_6ff169c8/index.m3u8",
+            "https://svip.feifei-play.com/20260629/46158_f7dd3d58/index.m3u8",
+            "https://svip.feifei-play.com/20260630/46216_239f33b4/index.m3u8",
+            "https://svip.feifei-play.com/20260701/46296_e4ccb212/index.m3u8",
+            "https://super.ffzy-online6.com/20260702/35839_119d40d1/index.m3u8",
+            "https://super.ffzy-online6.com/20260703/35922_6ff4bf36/index.m3u8",
+            "https://super.ffzy-online6.com/20260706/36122_607a43bb/index.m3u8",
+            "https://super.ffzy-online6.com/20260707/36178_21bd61bd/index.m3u8",
+            "https://super.ffzy-online6.com/20260708/36210_7b92988f/index.m3u8",
+            "https://super.ffzy-online6.com/20260709/36269_a0946d73/index.m3u8",
+            "https://super.ffzy-online6.com/20260710/36342_544d8a7b/index.m3u8",
+            "https://super.ffzy-online6.com/20260713/36484_64a2a4ca/index.m3u8",
+            "https://super.ffzy-online6.com/20260714/36566_4328ad19/index.m3u8",
+            "https://super.ffzy-online6.com/20260715/36601_429f3374/index.m3u8",
+            "https://super.ffzy-online6.com/20260716/36698_3039d41a/index.m3u8",
+            "https://super.ffzy-online6.com/20260717/36775_5960cf39/index.m3u8",
+            "https://super.ffzy-online6.com/20260720/36974_4cce2e43/index.m3u8",
+            "https://super.ffzy-online6.com/20260721/37034_bb9b2697/index.m3u8",
+            "https://super.ffzy-online6.com/20260722/37123_36313c39/index.m3u8",
+            "https://super.ffzy-online6.com/20260723/37203_d1cb4bd2/index.m3u8",
+            "https://super.ffzy-online6.com/20260724/37313_273ccb13/index.m3u8",
+            "https://super.ffzy-online6.com/20260727/37482_f16ae7b8/index.m3u8",
+            "https://super.ffzy-online6.com/20260728/37561_3a93d176/index.m3u8",
+            "https://super.ffzy-online6.com/20260729/37640_8742d654/index.m3u8",
+            "https://super.ffzy-online6.com/20260730/37693_1abc4fdd/index.m3u8",
+            "https://super.ffzy-online6.com/20260731/37770_10b3fa07/index.m3u8",
+            "https://super.ffzy-online6.com/20260803/37988_26f0ad95/index.m3u8",
+            "https://super.ffzy-online6.com/20260804/38052_37538674/index.m3u8",
+            "https://super.ffzy-online6.com/20260805/38132_dfcfbb19/index.m3u8",
+            "https://super.ffzy-online6.com/20260806/38241_9815cef3/index.m3u8",
+            "https://super.ffzy-online6.com/20260807/38310_21284c80/index.m3u8",
+            "https://super.ffzy-online6.com/20260810/38468_d7308441/index.m3u8",
+            "https://super.ffzy-online6.com/20260811/38545_bc419ad9/index.m3u8",
+            "https://super.ffzy-online6.com/20260812/38613_e125b7b8/index.m3u8",
+            "https://super.ffzy-online6.com/20260813/38693_a60a9cff/index.m3u8",
+            "https://super.ffzy-online6.com/20260814/38774_28d3112c/index.m3u8",
+            "https://super.ffzy-online6.com/20260817/38962_4dad75d2/index.m3u8",
+            "https://super.ffzy-online6.com/20260818/39061_09e5e3e9/index.m3u8",
+            "https://super.ffzy-online6.com/20260819/39133_da8b3433/index.m3u8",
+            "https://super.ffzy-online6.com/20260820/39217_790eacf1/index.m3u8",
+            "https://super.ffzy-online6.com/20260821/39287_c0d96add/index.m3u8",
+            "https://super.ffzy-online6.com/20260824/39427_0b7db80c/index.m3u8",
+            "https://super.ffzy-online6.com/20260825/39554_5177f46c/index.m3u8",
+            "https://super.ffzy-online6.com/20260826/39626_9d6aff53/index.m3u8",
+            "https://super.ffzy-online6.com/20260828/39807_a615c450/index.m3u8",
+            "https://super.ffzy-online6.com/20260828/39808_a9a80dd4/index.m3u8",
+            "https://super.ffzy-online6.com/20260831/39975_b4803e02/index.m3u8",
+            "https://super.ffzy-online6.com/20260901/40044_010cf673/index.m3u8",
+            "https://super.ffzy-online6.com/20260902/40115_6087889e/index.m3u8",
+            "https://super.ffzy-online6.com/20260903/40197_dcc8a9fd/index.m3u8",
+            "https://super.ffzy-online6.com/20260904/40281_810cd6ad/index.m3u8",
+            "https://super.ffzy-online6.com/20260907/40444_9ed8b53f/index.m3u8",
+            "https://super.ffzy-online6.com/20260908/40535_4d9d05d7/index.m3u8",
+            "https://super.ffzy-online6.com/20260909/40594_acc44efd/index.m3u8"
+        ]
+    },
+    {
+        "id": 132,
+        "title": "盲井",
+        "mainType": "movie",
+        "subCategory": "内地",
+        "year": "2003",
+        "rating": 7.5,
+        "views": 880000,
+        "poster": "https://img.feifeiimg.vip/upload/vod/20230417-1/995f175a83dfa63c2fdeda66a225e9c6.jpg",
+        "backdrop": "https://img.feifeiimg.vip/upload/vod/20230417-1/995f175a83dfa63c2fdeda66a225e9c6.jpg",
+        "plot": "在私人小煤矿做工的农民唐朝阳（王双宝）和宋金明（李易祥）发家致富的招数是，先套近乎将打工无门的外地农民认作亲人带到煤矿做工，在井下工作时制造“安全事故”将“亲人”杀死，再找矿主私了。两人在火车站盯上16岁的懵懂农村少年元凤鸣（王宝强）后，故伎重操帮其办了假身份证，更名后元凤鸣“成为”宋金明的侄子。三人来到新一家小煤矿成为挖煤工人，元凤鸣的好学、纯朴、天真与体贴常令宋金明想起自己正在念书的娃子，生出恻隐之心迟迟不肯下手，与唐朝阳的矛盾日益激化，不久，唐朝阳给他定下最后期限。",
+        "cast": "王双宝 / 王宝强 / 李易祥 / 安静 / 赵军",
+        "needPassword": false,
+        "playPassword": "668899",
+        "duration": "93 分钟",
+        "videoUrl": "https://vip.ffzy-play7.com/20230411/22142_a5d6460c/index.m3u8"
+    },
+    {
+        "id": 133,
+        "title": "盲山",
+        "mainType": "movie",
+        "subCategory": "内地",
+        "year": "2007",
+        "rating": 9.88,
+        "views": 8980000,
+        "poster": "https://img.feifeiimg.vip/upload/vod/20231018-1/a01df35ec94ef337371330c9d5b21008.jpg",
+        "backdrop": "https://img.feifeiimg.vip/upload/vod/20231018-1/a01df35ec94ef337371330c9d5b21008.jpg",
+        "plot": "1990年代末，初踏上社会的大学毕业生白雪梅（黄璐）急于帮父母分担重担，无奈一直找不到合适工作，在她发愁之际，装扮成医药采购公司员工的人贩子向她伸来热情的双手，她随他们来到中国西北某个偏僻山村采购中药，结果一杯水喝下肚，她倒床昏睡。 醒来后，白雪梅遍地不寻她的“医药公司 同事”，检查身份证和钱包时，发现它们也一同消失，瞬间，她醒悟自己已被卖给当地人，苦苦哀求一番后，白雪梅明白重获尊严和自由的唯一方式是逃出去，她开始了一次次的出逃冒险，而该过程中，她渐渐知道能相信的人只有自己。",
+        "cast": "黄璐,杨幼安,贺运乐,张玉玲,张友平,李杨",
+        "needPassword": false,
+        "playPassword": "668899",
+        "duration": "93 分钟",
+        "videoUrl": "https://vip.ffzy-online1.com/20231017/43896_021292dc/index.m3u8"
+    },
+    {
+        "id": 134,
+        "title": "大红灯笼高高挂",
+        "mainType": "movie",
+        "subCategory": "内地",
+        "year": "1991",
+        "rating": 8.7,
+        "views": 680000,
+        "poster": "https://img.feifeiimg.vip/upload/vod/20230326-1/b12c8594fafdb8c1b511da3ad3530333.jpg",
+        "backdrop": "https://img.feifeiimg.vip/upload/vod/20230326-1/b12c8594fafdb8c1b511da3ad3530333.jpg",
+        "plot": "大学刚读半年的颂莲（巩俐）被贪钱的母亲逼迫着嫁进陈家大院，成了老爷的第四房姨太。陈府有老规矩，姨太太们傍晚时分要站在自已的屋子前，等待下人送来的意味被老爷“临幸”的大红灯笼。 起初因为“新人”身份，颂莲得到老爷最多宠幸，但也因此被其它三位姨太太尤其笑里藏刀的二姨太（曹翠芬）挤兑得叫苦不迭。因为涉世不深，生性反叛好强的颂莲急欲争一口气，使计又成老爷身边红人，不想计被看穿，终败于二姨太手下酿成悲剧。而三姨太（何赛飞）的经历虽与颂莲迥异，却也殊途同归逃不出宿命。",
+        "cast": "巩俐,马精武,何赛飞,曹翠芬,周琦,孔琳,金淑媛,丁惟敏,初晓",
+        "needPassword": false,
+        "playPassword": "668899",
+        "duration": "93 分钟",
+        "videoUrl": "https://vip.ffzy-play7.com/20230324/19559_e23889f1/index.m3u8"
+    },
+    {
+        "id": 135,
+        "title": "秋菊打官司",
+        "mainType": "movie",
+        "subCategory": "内地",
+        "year": "1992",
+        "rating": 8.2,
+        "views": 880000,
+        "poster": "https://img.feifeiimg.vip/upload/vod/20230307-1/6b0c54e67b689c8ac73886c2381a3492.jpg",
+        "backdrop": "https://img.feifeiimg.vip/upload/vod/20230307-1/6b0c54e67b689c8ac73886c2381a3492.jpg",
+        "plot": "中国西北某个小山村里，村妇秋菊（巩俐 饰）的丈夫万庆来（刘佩琦 饰）在与村长争执时被对方踢伤下体无法再干农活，只能整日躺在床上，对此村长没表一态。秋菊气不过，找村长理论不得对方理会，为讨一口气，她一纸诉状将村长告到了乡政府。乡政府李公安耐心调解一番后，村长答应赔偿秋菊家的经济损 失，却是把钞票直接扔在地上拒不道歉。 村长的举动虽蛮横无理，众人还是觉得事情可以就此划上句号，唯独秋菊被激怒，立誓要讨个说法，于是她挺着个大肚子和妹妹来到县城，开始了漫漫告状路。 …",
+        "cast": "巩俐,刘佩琦,雷恪生,戈治均,杨柳春,朱万清,崔络纹,杨惠琴,王建法,林子,叶军",
+        "needPassword": false,
+        "playPassword": "668899",
+        "duration": "93 分钟",
+        "videoUrl": "https://vip.ffzy-play7.com/20230306/17258_0a65873a/index.m3u8"
+    },
+    {
+        "id": 136,
+        "title": "归来2014",
+        "mainType": "movie",
+        "subCategory": "内地",
+        "year": "2014",
+        "rating": 8.1,
+        "views": 780000,
+        "poster": "https://img.feifeiimg.vip/upload/vod/20240528-1/1d970d1ee64779d680eae9cb959d130b.jpg",
+        "backdrop": "https://img.feifeiimg.vip/upload/vod/20240528-1/1d970d1ee64779d680eae9cb959d130b.jpg",
+        "plot": "上世纪70年代初，与家人音讯全无隔绝多年的劳改犯陆焉识（陈道明 饰）在一次农场转迁途中逃跑回家。这对怀抱芭蕾舞梦想的女儿丹丹（张慧雯 饰）带来了巨大压力，她阻止母亲冯婉瑜（巩俐 饰）与父亲的相见。因此夫妻二人近在咫尺却又相隔天涯。文革结束后，陆焉识终于平反回家，但是他却发现女儿早已放弃了芭蕾的梦想成了一名工厂女工，而深爱的妻子因为患病已经不认识自己。深厚的感情、生活的变故，迫使陆焉识做出了对他来说最荒唐却又最合理的人生选择…… 本片是张艺谋导演加盟乐视影业后的第一部作品，被编剧邹静之誉为苦心之作。",
+        "cast": "陈道明,巩俐,张慧雯,郭涛,刘佩琦,祖峰,闫妮,辛柏青,张嘉益,陈小艺,丁嘉丽,李纯,张庭菲,付璐璐,高莹,王志强,张金元",
+        "needPassword": false,
+        "playPassword": "668899",
+        "duration": "93 分钟",
+        "videoUrl": "https://vip.ffzy-online1.com/20240528/50648_84a066e2/index.m3u8"
+    },
+    {
+        "id": 137,
+        "title": "夺冠",
+        "mainType": "movie",
+        "subCategory": "内地",
+        "year": "2020",
+        "rating": 7.1,
+        "views": 580000,
+        "poster": "https://img.feifeiimg.vip/upload/vod/20230330-1/fee85cee1d96cdf034b96267307f8d96.jpg",
+        "backdrop": "https://img.feifeiimg.vip/upload/vod/20230330-1/fee85cee1d96cdf034b96267307f8d96.jpg",
+        "plot": "2008年8月15日，北京奥运会女排比赛，中国VS美国。戴着金丝框眼镜的郎平（巩俐 饰）坐在美国队教练席上，大气沉稳，目光如电；中国队教练（黄渤 饰）站在场边，全神贯注，面带笑容。中国队教练望向郎平，目光充满深意，不断经过的人影遮蔽了他的视线，中国女排三十余年的沉浮图景被缓缓打开…",
+        "cast": "巩俐,黄渤,吴刚,彭昱畅,白浪,朱婷,徐云丽,张常宁,姚迪,林莉,刘晓彤,颜妮,惠若琪,丁霞,袁心玥,龚翔宇,李现,刘敏涛,陈展,罗慧,毛雯,李紫微,李冬徐,马雪纯,刘畅,刘贞宏,凌敏,李阳一,刘晨曦",
+        "needPassword": false,
+        "playPassword": "668899",
+        "duration": "93 分钟",
+        "videoUrl": "https://vip.ffzy-play7.com/20230328/20119_4aa1a678/index.m3u8"
+    },
+    {
+        "id": 138,
+        "title": "艺伎回忆录",
+        "mainType": "movie",
+        "subCategory": "内地",
+        "year": "2005",
+        "rating": 7.6,
+        "views": 780000,
+        "poster": "https://img.feifeiimg.vip/upload/vod/20230213-1/befe1387edfb8caca3a6e492b584128d.jpg",
+        "backdrop": "https://img.feifeiimg.vip/upload/vod/20230213-1/befe1387edfb8caca3a6e492b584128d.jpg",
+        "plot": "根据美国作家阿瑟-高顿的同名小说改编。故事以第一人称展开，时代背景从1929年开始延续到二战结束，女主人公回忆了自己从小拼命挣扎、历尽荣辱的人生经历。 有着一双蓝灰色眼睛的小百合（章子怡饰）出生于贫穷小渔村，被卖到京都一家知名的艺伎馆。小百合在那里学习了舞蹈、茶艺等，渐渐成为当地头牌艺伎，同时也不断受到京都第一红伎初桃（巩俐饰）的压迫与挑战。一个偶然的机会，全日本最美丽、知名的艺伎真美羽（杨紫琼饰）要认小百合为“妹妹”，此举从此改变了小百合的一生……",
+        "cast": "章子怡,渡边谦,杨紫琼,巩俐,周采芹,大后寿寿花,桃井薰,役所广司,伊川东吾,工藤夕贵,田川洋行",
+        "needPassword": false,
+        "playPassword": "668899",
+        "duration": "93 分钟",
+        "videoUrl": "https://vip.ffzy-play7.com/20230213/14480_69d1e082/index.m3u8"
+    },
+    {
+        "id": 139,
+        "title": "风月",
+        "mainType": "movie",
+        "subCategory": "内地",
+        "year": "1996",
+        "rating": 7.7,
+        "views": 520000,
+        "poster": "https://img.feifeiimg.vip/upload/vod/20230210-1/57a0d3a7ff5b22fd9dd2410123836b4d.jpg",
+        "backdrop": "https://img.feifeiimg.vip/upload/vod/20230210-1/57a0d3a7ff5b22fd9dd2410123836b4d.jpg",
+        "plot": "父母双亡的忠良（张国荣）投靠嫁入庞家的姐姐秀仪（何赛飞）时，处处受到姐夫的挤兑和侮辱，一怒之下用鸦片毒废了姐夫，逃到上海后，阴差阳错投入黑帮头目大大门下，成为利用色相勾引富家太太上钩再勒索其钱财的“拆白党”。 庞府老爷死后，大小姐如意（巩俐）被立为主事，为骗庞家财产，大大命忠良回到庞府引诱如意，岂料两人日久生出真情，不忍再欺骗如意的忠良独身返回上海，而如意也被大大接到上海，眼见了忠良所从事的“拆白党”勾当，心生死灰。 …",
+        "cast": "张国荣,巩俐,林健寰,何赛飞,任雷,林连昆,葛香亭,吴大维,张世,谢添,周野芒,周迅",
+        "needPassword": false,
+        "playPassword": "668899",
+        "duration": "93 分钟",
+        "videoUrl": "https://vip.ffzy-play7.com/20230209/14001_894058d3/index.m3u8"
+    },
+    {
+        "id": 140,
+        "title": "摇啊摇，摇到外婆桥",
+        "mainType": "movie",
+        "subCategory": "内地",
+        "year": "1995",
+        "rating": 7.4,
+        "views": 680000,
+        "poster": "https://img.feifeiimg.vip/upload/vod/20221201-1/1d222c96de5ab04c883f4a9a48c50157.jpg",
+        "backdrop": "https://img.feifeiimg.vip/upload/vod/20221201-1/1d222c96de5ab04c883f4a9a48c50157.jpg",
+        "plot": "1930年代，乡村少年唐水生来到上海投靠六叔（李雪健），在他的引荐下，做了歌舞皇后小金宝（巩俐）的贴身佣人。小金宝是上海滩一霸唐老爷（李保田）的女人，但与其手下宋二爷有染，而宋二爷已经觊觎唐老爷的位子良久。 六叔的猝死使唐老爷心生警觉，带着小金宝、水生等人来到一个只有寡 妇翠花和她一双儿女在的小岛避难，并下令对上岛的生熟面孔格杀无论。小金宝在同翠花的相处中对生活有了另一番理解，渐渐对唐老爷的残忍非常不满，然而她的命运亦掌控在唐老爷手中。",
+        "cast": "巩俐,李保田,李雪健,孙淳,傅彪,陈述,刘江,蒋宝英,王啸晓,杨倩倩,高英,高维明",
+        "needPassword": false,
+        "playPassword": "668899",
+        "duration": "93 分钟",
+        "videoUrl": "https://vip.ffzy-play6.com/20221129/9464_85fa0023/index.m3u8"
+    },
+    {
+        "id": 141,
+        "title": "菊豆",
+        "mainType": "movie",
+        "subCategory": "内地",
+        "year": "1990",
+        "rating": 8.2,
+        "views": 880000,
+        "poster": "https://img.feifeiimg.vip/upload/vod/20221201-1/1011528239d75d016494867f3821a73f.jpg",
+        "backdrop": "https://img.feifeiimg.vip/upload/vod/20221201-1/1011528239d75d016494867f3821a73f.jpg",
+        "plot": "杨天青（李保田饰）的叔叔杨金山（李纬饰），是个有生理缺陷的染坊主，在折磨死两房太太后，为续香火，他又花大价钱买了个年轻漂亮的女人菊豆（巩俐饰），对其百般虐待。 年近四十而尚未娶亲的天青，对因叔叔每夜滥施淫威而痛苦哀叫的菊豆由怜生爱，两人私通，生得一子。金山喜出望外，以为己出，取名天白。但不久金山中风，半身不遂，菊豆与天青更加肆无忌惮，得知真相的金山想要报复，后却误坠染池丧命。按家族的规矩，天青要搬出染房，被迫分离的菊豆与天青只能暗地来往。 10多年后，天白长大，外人的闲言琐语使他分外仇恨生父……",
+        "cast": "巩俐,李保田,李纬,丛志军,金甲,牛星丽",
+        "needPassword": false,
+        "playPassword": "668899",
+        "duration": "93 分钟",
+        "videoUrl": "https://vip.ffzy-play6.com/20221129/9352_69e085f1/index.m3u8"
+    },
+    {
+        "id": 142,
+        "title": "爱神-手",
+        "mainType": "movie",
+        "subCategory": "内地",
+        "year": "2004",
+        "rating": 7.7,
+        "views": 680000,
+        "poster": "https://img.feifeiimg.vip/upload/vod/20221127-1/65cce68c3f58fd0aea0c5f159850307a.jpg",
+        "backdrop": "https://img.feifeiimg.vip/upload/vod/20221127-1/65cce68c3f58fd0aea0c5f159850307a.jpg",
+        "plot": "该片是一部三段式主题（爱和性）电影，由米开朗基罗•安东尼奥尼（《危险临界点》）、史蒂文•索德伯格（《平衡》）和王家卫（《手》）三位导演联合执导。 《手》讲的是1960年代的香港，年轻的裁缝（张震）多年不计回报地爱着交际花华小姐（巩俐）的故事，影像华丽，充满了质感又略带伤感。《平衡》的故事发生在1950年代的纽约，广告人尼克•彭罗斯（罗伯特•唐尼）总是被春梦困扰，只得向他的心理医生珀尔（阿兰•阿金）求助，基调虽荒谬反常，却也可看成颇有自嘲意味的幽默喜剧。《危险临界线》则仍是安东尼奥尼一向关注的现代社会中的男女关系主题，哲学味道浓烈",
+        "cast": "巩俐,张震,克里斯托弗·布赫霍尔茨,Regina Nemni,路易莎·拉涅瑞,小罗伯特·唐尼,艾伦·阿金,艾利·凯特斯",
+        "needPassword": false,
+        "playPassword": "668899",
+        "duration": "93 分钟",
+        "videoUrl": "https://vip.ffzy-play7.com/20221126/7072_273d68a5/index.m3u8"
+    },
+    {
+        "id": 143,
+        "title": "2046",
+        "mainType": "movie",
+        "subCategory": "内地",
+        "year": "2004",
+        "rating": 7.7,
+        "views": 780000,
+        "poster": "https://img.feifeiimg.vip/upload/vod/20221126-1/a723e4d1b5efd28ed0d20aa18454f03a.jpg",
+        "backdrop": "https://img.feifeiimg.vip/upload/vod/20221126-1/a723e4d1b5efd28ed0d20aa18454f03a.jpg",
+        "plot": "1966年，从新加坡返回香港想忘掉过去的周慕云（梁朝伟 饰）住进东方酒店的、同他曾经熟悉的数字2046只差一号的2047号房，开始了他的卖文生涯。眼前、曾经在他身边出现过的一个个女人（章子怡、王菲、张曼玉、刘嘉玲等 饰）经过他大脑的过影后，令他对时空产生疑惑，不但忘不了过去，一幕幕往事反而更加挥之不去。 为了与过去作更好的告别，他将生活的点点滴滴化为文字，写下小说《2046》（说只要搭上了前往2046的列车，人们就可以找回失去的记忆）。 …",
+        "cast": "梁朝伟,章子怡,王菲,木村拓哉,巩俐,刘嘉玲,张震,张曼玉,董洁,通猜·麦金泰,萧炳林,吴廷烨,张睿羚",
+        "needPassword": false,
+        "playPassword": "668899",
+        "duration": "93 分钟",
+        "videoUrl": "https://vip.ffzy-play7.com/20221126/7051_2bcc22e4/index.m3u8"
+    },
+    {
+        "id": 144,
+        "title": "一代妖后",
+        "mainType": "movie",
+        "subCategory": "内地",
+        "year": "1989",
+        "rating": 7.3,
+        "views": 580000,
+        "poster": "https://img.feifeiimg.vip/upload/vod/20221116-1/6db139ed84ee997596537e3839b83ece.jpg",
+        "backdrop": "https://img.feifeiimg.vip/upload/vod/20221116-1/6db139ed84ee997596537e3839b83ece.jpg",
+        "plot": "清同治三年的1864年，假太监安得海自恃得西太后慈禧（刘晓庆）的宠爱，在朝中为所欲为，连同治皇帝（陈道明）也不放在眼中。当得知同治皇帝与宫女桂莲（巩俐）相好时，有心染指桂莲的他求得慈禧恩准，以将桂莲赐配给他“二哥”为名，想逼其与他成婚，不料桂莲性烈宁死不从，安得海恼羞成怒，将她卖进了天桥妓院。 同治皇帝敢怒不敢言，私访天桥妓院，并借安德海南下之机，传旨山东巡抚丁宝桢将其就地正法，与慈禧嫌隙渐深。得知同治染上梅毒后，慈禧不准皇后生育，同治含恨而死，不久，皇后自尽，东太后慈安（陈烨）也神秘驾崩。",
+        "cast": "刘晓庆,巩俐,陈烨,陈道明,李岩,刘虹,阎青妤,萧小华,俞立文",
+        "needPassword": false,
+        "playPassword": "668899",
+        "duration": "93 分钟",
+        "videoUrl": "https://vip.ffzy-play7.com/20221115/4801_913c0488/index.m3u8"
+    },
+    {
+        "id": 145,
+        "title": "红高粱",
+        "mainType": "movie",
+        "subCategory": "内地",
+        "year": "1988",
+        "rating": 8.5,
+        "views": 880000,
+        "poster": "https://img.feifeiimg.vip/upload/vod/20221116-1/e75e31b794e361e0544d5e5c53c4a96b.jpg",
+        "backdrop": "https://img.feifeiimg.vip/upload/vod/20221116-1/e75e31b794e361e0544d5e5c53c4a96b.jpg",
+        "plot": "该片改编自莫言1986年发表的两部中篇小说《红高粱》和《高粱酒》。因为一匹骡子，“ 我奶奶”九儿（巩俐饰）的父母要她嫁给一位拥有一座酒坊的50岁麻风病人。九儿乘坐花轿出嫁时，在途中被一名强盗拦截。其中一名抬轿男子余占鳌（姜文饰）打退了强盗，九儿因而和他开始相互喜欢。3天后九儿回乡探望父母 。抬轿男子突然从高粱田里冲出来，抢走了九儿。他们在高粱田野外交合。九儿回到酒坊的时候发现麻风病的丈夫死了，“ 我奶奶”撑起李家的烧酒作坊，不久余占鳌正式成为 “我爷爷”，并独创酿制好酒十八红的方法。抗日战争期间，“我爷爷”和“我奶奶”连手谱写了一曲悲歌",
+        "cast": "巩俐,姜文,滕汝骏,钱明,陈志刚,计春华",
+        "needPassword": false,
+        "playPassword": "668899",
+        "duration": "93 分钟",
+        "videoUrl": "https://vip.ffzy-play7.com/20221115/4490_52f869a7/index.m3u8"
+    },
+    {
+        "id": 146,
+        "title": "唐伯虎点秋香",
+        "mainType": "movie",
+        "subCategory": "港台",
+        "year": "1993",
+        "rating": 8.7,
+        "views": 580000,
+        "poster": "https://img.feifeiimg.vip/upload/vod/20221115-1/1a23ea72288288f399f1e9f6d9ae7d8e.jpg",
+        "backdrop": "https://img.feifeiimg.vip/upload/vod/20221115-1/1a23ea72288288f399f1e9f6d9ae7d8e.jpg",
+        "plot": "唐伯虎（周星驰 饰）身为江南四大才子之首，却有道不尽的心酸。宁王想唐伯虎帮忙图谋作反，唐伯虎只好用内功改变脉象，令众人都相信他命不久矣。母亲埋怨他不应该把功夫暴露，因为他们家族一直被当年的仇人追杀。唐伯虎在与朋友出游时，遇到了貌若天仙的秋香并对她一见钟情，决心要到华府当 家丁以追求秋香，唐伯虎被取名华安。期间华太师遇到了宁王上门刁难，幸好有唐伯虎出面相助，并暴露了自己是唐伯虎的身份。秋香才知道华安是自己欣赏的唐伯虎。华夫人跟唐家有怨，因此二人便开始斗法。怎料宁王跟夺命书生再次上门，华夫人不是对手，幸得唐伯虎出手，华夫人也答应把秋香许配给唐伯虎。",
+        "cast": "周星驰,巩俐,陈百祥,郑佩佩,朱咪咪,梁家仁,苑琼丹,梁荣忠,黄一山,黄霑,吴镇宇,刘家辉,蓝洁瑛,谷德昭,陈辉虹,李健仁,宣萱,温翠苹",
+        "needPassword": false,
+        "playPassword": "668899",
+        "duration": "93 分钟",
+        "videoUrl": "https://vip.ffzy-play6.com/20221112/6095_c5a5c574/index.m3u8"
+    },
+    {
+        "id": 147,
+        "title": "活着",
+        "mainType": "movie",
+        "subCategory": "内地",
+        "year": "1994",
+        "rating": 9.3,
+        "views": 980000,
+        "poster": "https://img.feifeiimg.vip/upload/vod/20221018-1/38d3272db3e5d94fb8b5f58338509749.jpg",
+        "backdrop": "https://img.feifeiimg.vip/upload/vod/20221018-1/38d3272db3e5d94fb8b5f58338509749.jpg",
+        "plot": "根据余华同名小说改编。 富少福贵（葛优）嗜赌成性，妻子家珍（巩俐）屡劝无果后带着女儿凤霞离开了他，当夜，福贵输光所有家产气死父亲，被迫靠变卖母亲首饰租间破屋过活。一年后，家珍手拉凤霞怀抱刚出世的儿子有庆回到家中，福贵痛改前非，开始靠演皮影戏过起安份守己的日子。 但好景不常，内战时期，福贵被国民党抓去当劳工，一番辗转终回到家乡与一家人团圆后，凤霞因病变成哑巴，而在后来的大跃进运动和文化大革命中，他虽获某些小福，逆境却也一直与他如影相随。",
+        "cast": "葛优,巩俐,姜武,牛犇,郭涛,张璐,倪大红,肖聪,董飞,刘天池,董立范,黄宗洛,刘燕瑾,李连义,杨同顺",
+        "needPassword": false,
+        "playPassword": "668899",
+        "duration": "93 分钟",
+        "videoUrl": "https://vip.ffzy-play.com/20221011/100_192cffb5/index.m3u8"
+    },
+    {
+        "id": 148,
+        "title": "赌侠2：上海滩赌圣",
+        "mainType": "movie",
+        "subCategory": "港台",
+        "year": "1991",
+        "rating": 7.7,
+        "views": 880000,
+        "poster": "https://img.feifeiimg.vip/upload/vod/20221017-1/ade2980affa4044a715674a0c42c5280.jpg",
+        "backdrop": "https://img.feifeiimg.vip/upload/vod/20221017-1/ade2980affa4044a715674a0c42c5280.jpg",
+        "plot": "阿星（周星驰 饰）由赌神处学成归来，恰逢不甘心失败的大军集合中南海五大高手复仇，虽有龙五（向华强 饰）相助，但阿星与三叔（吴孟达 饰）仍被大军等人发功送至1937年的上海…… 阿星与三叔失散后意外击杀谋害许文强之凶手，得以结识丁力（吕良伟 饰），自此与祖父周大福（吴孟达 饰）留在丁力身边，丁力女友如仙（巩俐 饰）令阿星魂牵梦绕，却不知她是自己所中意女孩如梦（巩俐 饰）的孪生姐姐。川岛芳子意欲控制上海，于是网罗大军等人频频向丁力发难，并约定最后以赌局决定胜负，阿星由日本人手中涉险逃脱，终于赶上赌局，而决定这场赌局的关键，却是一个名叫“今晚打老虎”的神秘人物……",
+        "cast": "周星驰,巩俐,吕良伟,向华强,吴君如,吴孟达,黄韵诗,龙方,张敏,方季韦",
+        "needPassword": false,
+        "playPassword": "668899",
+        "duration": "93 分钟",
+        "videoUrl": "https://vip.ffzy-online.com/20221017/870_24fd00ae/index.m3u8"
+    },
+    {
+        "id": 149,
+        "title": "兰心大剧院",
+        "mainType": "movie",
+        "subCategory": "内地",
+        "year": "2019",
+        "rating": 7.2,
+        "views": 680000,
+        "poster": "https://img.feifeiimg.vip/upload/vod/20221112-1/7ce73facfa035fa9b032f41c31e37a30.jpg",
+        "backdrop": "https://img.feifeiimg.vip/upload/vod/20221112-1/7ce73facfa035fa9b032f41c31e37a30.jpg",
+        "plot": "电影根据虹影《上海之死》及横光利一《上海》改编。 1941年。著名演员于堇返回孤岛时期的上海，表面上是为了出演她的旧爱执导的话剧《礼拜六小说》。但是她真正的目的是什么？是为了救出她的前夫？为了给盟军搜集情报？为了给养父工作？还是为了和自己的爱人一起逃离战争？她真正的使命是什么?随着她着手执行任务，敌我越来越难以分辨，一个女人的命运被时代紧紧牵引，她又如何做出改变世界格局的选择? 戏里戏外，谁能幸免?",
+        "cast": "巩俐,赵又廷,小田切让,帕斯卡尔·格雷戈里,汤姆·弗拉席亚,黄湘丽,中岛步,王传君,张颂文",
+        "needPassword": false,
+        "playPassword": "668899",
+        "duration": "93 分钟",
+        "videoUrl": "https://vip.ffzy-play7.com/20221111/3038_38dc5c46/index.m3u8"
+    },
+    {
+        "id": 150,
+        "title": "交锋",
+        "mainType": "tv",
+        "subCategory": "内地剧",
+        "year": "2028",
+        "rating": 8.7,
+        "views": 980000,
+        "poster": "https://img.feifeiimg.vip/upload/vod/20260907-1/b9dbfdf7c72c2c28abbdd2ddc3e11802.jpg",
+        "backdrop": "https://img.feifeiimg.vip/upload/vod/20260907-1/b9dbfdf7c72c2c28abbdd2ddc3e11802.jpg",
+        "plot": "故事由一宗世纪之交的泄密大案而起，扣动两岸局势脉搏的同时，还掩藏着一场境外势力与我方在隐蔽战线上的针锋较量。上世纪九十年代末，闵中市国家安全局一对性格迥异的师徒，因机缘巧合的命运安排，为了共同的使命与信仰并肩作战。他们联手挫败了各种阴谋，也与敌手在横跨二十年的命运长河里 不断纠缠。当时间流转，新世纪的潮流剧变席卷而来，国家安全局势攻防易势，隐蔽战线上的较量却不止不休。在一次次关乎人性的考验中，这三人的命运关系因不同抉择，在岁月洗礼中悄然改变着……",
+        "cast": "王凯,周依然,欧豪,彭昱畅,成泰燊,齐欢,邱天,吴启华,吴越,岳旸,高鑫,高捷,祖峰,董勇",
+        "needPassword": false,
+        "playPassword": "668899",
+        "episodes": 8,
+        "totalEpisodes": 30,
+        "episodeUrls": [
+            "https://super.ffzy-online6.com/20260907/40469_e0df2a62/index.m3u8",
+            "https://super.ffzy-online6.com/20260907/40470_af866a23/index.m3u8",
+            "https://super.ffzy-online6.com/20260907/40471_0c4033c4/index.m3u8",
+            "https://super.ffzy-online6.com/20260907/40472_d768001e/index.m3u8",
+            "https://super.ffzy-online6.com/20260907/40473_d007a4b8/index.m3u8",
+            "https://super.ffzy-online6.com/20260907/40481_54ba2d06/index.m3u8",
+            "https://super.ffzy-online6.com/20260908/40544_d9ee56d4/index.m3u8",
+            "https://super.ffzy-online6.com/20260908/40547_b7a67633/index.m3u8"
+        ]
+    },
+    {
+        "id": 151,
+        "title": "荒井小姐的秘密生活",
+        "mainType": "movie",
+        "subCategory": "日韩",
+        "year": "2019",
+        "rating": 8.6,
+        "views": 880000,
+        "poster": "https://pic.youkupic.com/upload/vod/20240409-1/3939164a75ba20e82a90ff937a97d063.jpg",
+        "backdrop": "https://pic.youkupic.com/upload/vod/20240409-1/3939164a75ba20e82a90ff937a97d063.jpg",
+        "plot": "一直受异性欢迎，满足于「渴望被认可的欲望」的主人公Hiromi。玩弄对方的感情自己却毫发无损。享受着恋爱的乐趣，拒绝肉体关系，这种宛如游戏般的手法，另同一合租屋的双性恋晃和恋爱不断失败的彩极为震惊。着装并不暴露很多，隐约可见锁骨，具有通透感的连衣裙是她的战斗服。看上去是随处可见的女性，但是运用精心计算的言行举止，令无数男性落马，因此被彩称为「你真是“隐藏的Bitch”啊！」 某一天，在职场出现了在意的对象，Hiromi第一次面对自己的真心。在受到晃的训斥「不能光依靠男人。请好好做人」后，她开始寻找＜自己需要的东西＞……",
+        "cast": "佐久间由衣村上虹郎大后寿寿花森山未来",
+        "needPassword": false,
+        "playPassword": "668899",
+        "duration": "93 分钟",
+        "videoUrl": "https://v.cdnlz12.com/20230905/9909_c4eba9be/index.m3u8"
+    },
+    {
+        "id": 152,
+        "title": "被我弄丢的你",
+        "mainType": "movie",
+        "subCategory": "内地",
+        "year": "2024",
+        "rating": 6.4,
+        "views": 660000,
+        "poster": "https://img.feifeiimg.vip/upload/vod/20240412-1/0015db9af12d5f66e5028c7ca299bc8a.jpg",
+        "backdrop": "https://img.feifeiimg.vip/upload/vod/20240412-1/0015db9af12d5f66e5028c7ca299bc8a.jpg",
+        "plot": "影片改编自郑执原著小说《被我弄丢两次的王斤斤》。 2010年夏天，高考考场上，白晓宇（檀健次 饰）第一次遇见王斤斤（张婧仪 饰），就把她给“弄丢”了。 四年后，他们在毕业季的求职人潮中意外重逢，然后相恋。 2018年，相识八年、相爱五年的他们站在婚姻的门前踌躇不前了。 他们彼此相爱却又难逃现实的重重羁绊，白晓宇会再一次 弄丢王斤斤吗……",
+        "cast": "健次,张婧仪,蒋龙,刘恋,夏力薪,侯长荣,吴玉芳,果靖霖,黄小蕾,张大大,任彬,孙芮",
+        "needPassword": false,
+        "playPassword": "668899",
+        "duration": "93 分钟",
+        "videoUrl": "https://vip.ffzy-plays.com/20240412/25930_dabff29a/index.m3u8"
+    },
+    {
+        "id": 153,
+        "title": "念念相忘",
+        "mainType": "movie",
+        "subCategory": "内地",
+        "year": "2023",
+        "rating": 6.7,
+        "views": 780000,
+        "poster": "https://img.feifeiimg.vip/upload/vod/20230927-1/1b3a86754b670c57d52492d12e2f9d4e.jpg",
+        "backdrop": "https://img.feifeiimg.vip/upload/vod/20230927-1/1b3a86754b670c57d52492d12e2f9d4e.jpg",
+        "plot": "转校生许念念与少年杨燚因误会结下梁子，水火不容的两人展开一系列比拼，本以为是好胜心作祟，却在不知不觉中萌发了情愫。飒爽的少女与中二的少年，就这样一起度过了热血又难忘的高中时光，最后却遗憾地擦身而过……当念念不忘的两人再次相见，他们能否勇敢一场，排除万难直面内心的喜欢？ 电影改编自张皓宸小说《我与世界只差一个你》",
+        "cast": "刘浩存,宋威龙,卜冠今,郭丞,高亚麟,倪虹洁,郭柯宇,张磊",
+        "needPassword": false,
+        "playPassword": "668899",
+        "duration": "93 分钟",
+        "videoUrl": "https://super.ffzy-online6.com/20230927/19149_95bab7a7/index.m3u8"
+    },
+    {
+        "id": 154,
+        "title": "雷霆悍匪",
+        "mainType": "movie",
+        "subCategory": "港台",
+        "year": "2001",
+        "rating": 5.5,
+        "views": 680000,
+        "poster": "https://suoni.dz002.com/upload/vod/20251013-16/b89445dc19f0b2212bcc375f87eb59d4.jpg",
+        "backdrop": "https://suoni.dz002.com/upload/vod/20251013-16/b89445dc19f0b2212bcc375f87eb59d4.jpg",
+        "plot": "商业间谍经纪徐峰接获一单酬金可观的生意，于是委托跟他份属好友的杀手KK往执行任务。KK早已厌倦杀手生涯，本欲拒绝再干，但疾恶如仇的她，发现暗杀名单上的每个人均是...",
+        "cast": "彭丹 顾冠忠 张春燕 曹查理 关伟伦 赵海媚",
+        "needPassword": false,
+        "playPassword": "668899",
+        "duration": "93 分钟",
+        "videoUrl": "https://v1.rstu6.com/202308/20/eUshRhdR5E2/video/index.m3u8"
     }
 ],
     init() {
@@ -4384,7 +5033,57 @@ const app = {
             heroSection.addEventListener('mouseenter', () => this.stopHeroCarousel());
             heroSection.addEventListener('mouseleave', () => this.startHeroCarousel());
         }
+
+        /* ---- 跑马灯动画结束后移除类，复位到隐藏状态 ---- */
+        const marqueeText = document.querySelector('.video-marquee-text');
+        if (marqueeText) {
+            marqueeText.addEventListener('animationend', () => {
+                marqueeText.classList.remove('scrolling');
+            });
+        }
     },
+
+    /* ============ 视频跑马灯控制 ============ */
+
+    /**
+     * 重置跑马灯触发状态（每次加载新视频/新集数时调用）
+     */
+    resetMarquee() {
+        this.state.marqueeTriggered = {};
+        this.state.marqueeInitialShown = false;
+        const text = document.querySelector('.video-marquee-text');
+        if (text) {
+            text.classList.remove('scrolling');
+        }
+    },
+
+    /**
+     * 主动触发一次跑马灯滚动
+     */
+    triggerMarquee() {
+        const text = document.querySelector('.video-marquee-text');
+        if (!text) return;
+        // 强制重排，确保连续触发时动画能重新播放
+        text.classList.remove('scrolling');
+        void text.offsetWidth;
+        text.classList.add('scrolling');
+    },
+
+    /**
+     * 视频 timeupdate 回调：检测是否到达 10/30/40 分钟节点
+     */
+    onMarqueeTimeUpdate() {
+        const player = document.getElementById('main-player');
+        if (!player || !player.currentTime) return;
+        const t = player.currentTime;
+        this.state.marqueePoints.forEach(pt => {
+            if (t >= pt && !this.state.marqueeTriggered[pt]) {
+                this.state.marqueeTriggered[pt] = true;
+                this.triggerMarquee();
+            }
+        });
+    },
+
     startHeroCarousel() {
         this.stopHeroCarousel();
         if (this.state.heroCarouselList.length <= 1) return;
@@ -4833,6 +5532,18 @@ const app = {
             this.state.hlsInstance.destroy();
             this.state.hlsInstance = null;
         }
+
+        /* ---- 每次加载新源时重置跑马灯状态 & 绑定监听 ---- */
+        this.resetMarquee();
+        player.ontimeupdate = () => this.onMarqueeTimeUpdate();
+        player.onplay = () => {
+            // 开播时首次滚动（仅一次）
+            if (!this.state.marqueeInitialShown) {
+                this.state.marqueeInitialShown = true;
+                this.triggerMarquee();
+            }
+        };
+
         if (Hls.isSupported()) {
             const hls = new Hls({
                 maxBufferLength: 30,
@@ -4864,6 +5575,10 @@ const app = {
         this.state.currentPlayingItem = null;
         this.state.episodeList = [];
         this.state.currentEpisodeIndex = 0;
+        /* 关闭播放器时也清理跑马灯监听 */
+        player.ontimeupdate = null;
+        player.onplay = null;
+        this.resetMarquee();
     },
     toggleFullScreen() {
         const playerContainer = document.querySelector('#player-modal > div');
