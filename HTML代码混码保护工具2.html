@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTML 代码混码保护工具</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+ .code-area { font-family: "SF Mono", Monaco, Menlo, Consolas, "Courier New", monospace; font-size: 12px; line-height: 1.5; tab-size: 2; }
+ .drop-zone.dragover { border-color: #3b82f6; background-color: #eff6ff; }
+ .preview-frame { background: #fff; }
+ /* 自定义滚动条 */
+ .code-area::-webkit-scrollbar { width: 8px; height: 8px; }
+ .code-area::-webkit-scrollbar-track { background: #1e293b; }
+ .code-area::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+ .code-area::-webkit-scrollbar-thumb:hover { background: #64748b; }
+</style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+<div class="max-w-6xl mx-auto px-3 py-5 md:py-8">
+ <!-- 标题 -->
+ <header class="text-center mb-6">
+ <h1 class="text-2xl md:text-3xl font-bold text-slate-800">🛡️ HTML 代码混码保护工具</h1>
+ <p class="text-slate-500 text-sm mt-2">导入 HTML → 多层混码 → 导出自解码网页，兼容所有浏览器（含手机端）</p>
+ </header>
+
+ <!-- 第一步：导入 -->
+ <section class="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-5">
+ <h2 class="text-lg font-semibold text-slate-700 mb-3 flex items-center">
+ <span class="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-2">1</span> 导入 HTML 文件
+ </h2>
+ <div id="drop-zone" class="drop-zone border-2 border-dashed border-slate-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+ <input type="file" id="file-input" accept=".html,.htm,.txt" class="hidden">
+ <i class="text-4xl text-slate-400">📄</i>
+ <p class="text-slate-600 mt-2 text-sm">点击选择或拖拽 HTML 文件到此处</p>
+ <p class="text-slate-400 text-xs mt-1">支持 .html / .htm / .txt 格式，可导入【已混码的自解码HTML】自动还原源码</p>
+ </div>
+ <div id="file-info" class="hidden mt-3 text-sm text-slate-600 bg-slate-50 rounded-lg p-3 flex justify-between items-center">
+ <span id="file-name"></span>
+ <span id="file-size" class="text-slate-400"></span>
+ </div>
+ </section>
+
+ <!-- 第二步：原始代码 -->
+ <section class="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-5">
+ <div class="flex justify-between items-center mb-3">
+ <h2 class="text-lg font-semibold text-slate-700 flex items-center">
+ <span class="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-2">2</span> 原始代码（可编辑）
+ </h2>
+ <button id="clear-btn" class="text-xs text-slate-400 hover:text-red-500 transition-colors">清空</button>
+ </div>
+ <textarea id="source-code" class="code-area w-full h-48 md:h-56 p-3 bg-slate-900 text-green-400 rounded-lg border border-slate-700 resize-y focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="在此粘贴 HTML 代码，或通过上方按钮导入文件...
+👉 若导入【已经混码保护后的html文件】，工具会自动解码并在此展示还原后的源码"></textarea>
+ <div class="flex justify-between items-center mt-2 text-xs text-slate-400">
+ <span id="source-stats">字符数：0</span>
+ </div>
+ </section>
+
+ <!-- 第三步：混码按钮 -->
+ <section class="text-center mb-5">
+ <button id="obfuscate-btn" class="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg shadow-lg hover:from-blue-700 hover:to-indigo-700 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+ 🔒 开始混码
+ </button>
+ </section>
+
+ <!-- 第四步：混码结果 -->
+ <section id="result-section" class="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-5 hidden">
+ <div class="flex justify-between items-center mb-3">
+ <h2 class="text-lg font-semibold text-slate-700 flex items-center">
+ <span class="bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-2">3</span> 混码后代码
+ </h2>
+ <div class="flex gap-2">
+ <button id="copy-btn" class="px-3 py-1.5 text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 rounded transition-colors">📋 复制代码</button>
+ <button id="download-btn" class="px-3 py-1.5 text-xs bg-green-600 hover:bg-green-700 text-white rounded transition-colors">💾 导出 HTML</button>
+ </div>
+ </div>
+ <textarea id="result-code" class="code-area w-full h-48 md:h-56 p-3 bg-slate-900 text-amber-400 rounded-lg border border-slate-700 resize-y focus:outline-none" readonly></textarea>
+ <div class="flex justify-between items-center mt-2 text-xs text-slate-400">
+ <span id="result-stats">字符数：0</span>
+ <span id="ratio-stats"></span>
+ </div>
+ </section>
+
+ <!-- 第五步：预览 -->
+ <section id="preview-section" class="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-5 hidden">
+ <h2 class="text-lg font-semibold text-slate-700 mb-3 flex items-center">
+ <span class="bg-purple-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-2">4</span> 效果预览（混码后实际渲染）
+ </h2>
+ <div class="border border-slate-200 rounded-lg overflow-hidden bg-white">
+ <div class="bg-slate-100 px-3 py-2 flex items-center gap-2 border-b border-slate-200">
+ <span class="w-3 h-3 rounded-full bg-red-400"></span>
+ <span class="w-3 h-3 rounded-full bg-yellow-400"></span>
+ <span class="w-3 h-3 rounded-full bg-green-400"></span>
+ <span class="text-xs text-slate-400 ml-2">预览窗口</span>
+ </div>
+ <iframe id="preview-frame" class="preview-frame w-full h-64 md:h-96" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+ </div>
+ <p class="text-xs text-slate-400 mt-2">以上为混码后 HTML 的实际渲染效果，与导出文件打开效果一致。</p>
+ </section>
+
+ <!-- 说明 -->
+ <section class="bg-blue-50 border border-blue-100 rounded-xl p-4 md:p-5 text-sm text-slate-600">
+ <h3 class="font-semibold text-blue-700 mb-2">📖 使用说明</h3>
+ <ul class="list-disc list-inside space-y-1 text-xs md:text-sm">
+ <li>混码采用 <strong>UTF-8 编码 → Base64 → XOR 动态异或 → 再 Base64</strong> 四层处理，源码不可直接阅读。</li>
+ <li>导出文件为<strong>自解码 HTML</strong>，打开时由内置脚本自动还原渲染，无需任何外部依赖。</li>
+ <li>✅ 新增：导入已混码的自解码HTML文件，自动解码，在原始代码框查看还原后的源码</li>
+ <li>兼容 Chrome、Firefox、Safari、Edge 及手机端浏览器，输出文件含 viewport 适配。</li>
+ <li>每次混码生成随机密钥，相同源码每次输出结果不同。</li>
+ <li>混码仅增加阅读难度，无法阻止专业人士逆向，建议用于一般保护场景。</li>
+ </ul>
+ </section>
+</div>
+<!-- Toast 提示 -->
+<div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-5 py-2.5 rounded-lg shadow-lg text-sm opacity-0 transition-opacity duration-300 pointer-events-none z-50"></div>
+<script>
+(function(){ "use strict";
+ // ========== DOM 引用 ==========
+ const dropZone = document.getElementById('drop-zone');
+ const fileInput = document.getElementById('file-input');
+ const fileInfo = document.getElementById('file-info');
+ const fileNameEl = document.getElementById('file-name');
+ const fileSizeEl = document.getElementById('file-size');
+ const sourceCode = document.getElementById('source-code');
+ const sourceStats = document.getElementById('source-stats');
+ const clearBtn = document.getElementById('clear-btn');
+ const obfBtn = document.getElementById('obfuscate-btn');
+ const resultSection= document.getElementById('result-section');
+ const previewSection=document.getElementById('preview-section');
+ const resultCode = document.getElementById('result-code');
+ const resultStats = document.getElementById('result-stats');
+ const ratioStats = document.getElementById('ratio-stats');
+ const copyBtn = document.getElementById('copy-btn');
+ const downloadBtn = document.getElementById('download-btn');
+ const previewFrame = document.getElementById('preview-frame');
+ const toast = document.getElementById('toast');
+
+ // ========== 工具函数 ==========
+ function showToast(msg, duration){
+ toast.textContent = msg;
+ toast.style.opacity = '1';
+ clearTimeout(toast._t);
+ toast._t = setTimeout(function(){
+ toast.style.opacity = '0';
+ }, duration || 2000);
+ }
+ function formatSize(bytes){
+ if (bytes < 1024) return bytes + ' B';
+ if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+ return (bytes / 1048576).toFixed(2) + ' MB';
+ }
+ function updateSourceStats(){
+ sourceStats.textContent = '字符数：' + sourceCode.value.length;
+ }
+
+ // ========== 【新增】解码函数：解析混码后的自解码HTML，提取并还原原始html ==========
+ function decodeObfuscatedHtml(htmlText) {
+ // 匹配混码文件里的编码数据encodedData 和密钥key
+ const matchData = htmlText.match(/atob\("([^"]+)"\)/);
+ const matchKey = htmlText.match(/var _0x3=(\d+);/);
+ if(!matchData || !matchKey) return null;
+
+ const encodedData = matchData[1];
+ const key = Number(matchKey[1]);
+
+ // 反向还原流程，和encodeHTML完全逆向
+ const xored = atob(encodedData);
+ let b64Str = "";
+ for(let i=0;i<xored.length;i++){
+ b64Str += String.fromCharCode(xored.charCodeAt(i) ^ ((key+i)%256));
+ }
+ const binaryStr = atob(b64Str);
+ const bytes = new Uint8Array(binaryStr.length);
+ for(let i=0;i<binaryStr.length;i++){
+ bytes[i] = binaryStr.charCodeAt(i);
+ }
+ const originHtml = new TextDecoder().decode(bytes);
+ return originHtml;
+ }
+
+ // ========== 文件导入 ==========
+ dropZone.addEventListener('click', function(){ fileInput.click(); });
+ dropZone.addEventListener('dragover', function(e){ e.preventDefault(); dropZone.classList.add('dragover'); });
+ dropZone.addEventListener('dragleave', function(){ dropZone.classList.remove('dragover'); });
+ dropZone.addEventListener('drop', function(e){
+ e.preventDefault();
+ dropZone.classList.remove('dragover');
+ if (e.dataTransfer.files.length > 0){
+ handleFile(e.dataTransfer.files[0]);
+ }
+ });
+ fileInput.addEventListener('change', function(e){
+ if (e.target.files.length > 0){
+ handleFile(e.target.files[0]);
+ }
+ });
+
+ function handleFile(file){
+ const reader = new FileReader();
+ reader.onload = function(e){
+ const fileContent = e.target.result;
+ // 尝试解码，判断是否为【已混码的html文件】
+ const decodedSource = decodeObfuscatedHtml(fileContent);
+ if(decodedSource !== null){
+ // 成功识别混码文件，填充还原后的源码
+ sourceCode.value = decodedSource;
+ showToast('✅ 识别为混码文件，自动解码成功，已加载原始源码！');
+ }else{
+ // 普通原始html，直接加载
+ sourceCode.value = fileContent;
+ showToast('文件导入成功：' + file.name);
+ }
+ updateSourceStats();
+ fileNameEl.textContent = '📁 ' + file.name;
+ fileSizeEl.textContent = formatSize(file.size);
+ fileInfo.classList.remove('hidden');
+ };
+ reader.onerror = function(){ showToast('文件读取失败，请重试'); };
+ reader.readAsText(file, 'UTF-8');
+ }
+
+ clearBtn.addEventListener('click', function(){
+ sourceCode.value = '';
+ updateSourceStats();
+ fileInfo.classList.add('hidden');
+ resultSection.classList.add('hidden');
+ previewSection.classList.add('hidden');
+ fileInput.value = '';
+ showToast('已清空');
+ });
+ sourceCode.addEventListener('input', updateSourceStats);
+
+ // ========== 核心混码算法 ==========
+ /**
+ * 将字符串编码为多层混码数据
+ * 流程: 原文 → UTF-8 bytes → binary string → Base64 → XOR(动态密钥) → Base64
+ * @param {string} html - 原始 HTML
+ * @returns {{data: string, key: number}} 编码数据与密钥
+ */
+ function encodeHTML(html){
+ // 1. UTF-8 编码
+ const bytes = new TextEncoder().encode(html);
+ // 2. 转为 binary string
+ let binary = '';
+ const len = bytes.length;
+ for (let i = 0; i < len; i++){
+ binary += String.fromCharCode(bytes[i]);
+ }
+ // 3. 第一次 Base64
+ let b64 = btoa(binary);
+ // 4. XOR 动态异或 (密钥 + 位置偏移)
+ const key = Math.floor(Math.random() * 256);
+ let xored = '';
+ const b64len = b64.length;
+ for (let i = 0; i < b64len; i++){
+ xored += String.fromCharCode(b64.charCodeAt(i) ^ ((key + i) % 256));
+ }
+ // 5. 第二次 Base64 (确保全是可打印安全字符)
+ const finalData = btoa(xored);
+ return { data: finalData, key: key };
+ }
+
+ /**
+ * 生成自解码 HTML 输出
+ * @param {string} encodedData - 混码后的数据
+ * @param {number} key - 异或密钥
+ * @returns {string} 完整的自解码 HTML
+ */
+ function generateOutputHTML(encodedData, key){
+ // 解码脚本（混淆变量名 + 字符串数组）
+ const decoder = [
+ '<!DOCTYPE html>',
+ '<html lang="zh-CN">',
+ '<head>',
+ '<meta charset="UTF-8">',
+ '<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">',
+ '<meta http-equiv="X-UA-Compatible" content="IE=edge">',
+ '<title></title>',
+ '</head>',
+ '<body>',
+ '<script>',
+ '(function(){',
+ 'var _0x1=["open","write","close","length","charCodeAt","fromCharCode","decode"];',
+ 'var _0x2=atob("' + encodedData + '");',
+ 'var _0x3=' + key + ';',
+ 'var _0x4="";',
+ 'for(var _0x5=0;_0x5<_0x2[_0x1[3]];_0x5++){',
+ '_0x4+=String[_0x1[5]](_0x2[_0x1[4]](_0x5)^(_0x3+_0x5)%256);',
+ '}',
+ 'var _0x6=atob(_0x4);',
+ 'var _0x7=new Uint8Array(_0x6[_0x1[3]]);',
+ 'for(var _0x5=0;_0x5<_0x6[_0x1[3]];_0x5++){_0x7[_0x5]=_0x6[_0x1[4]](_0x5);}',
+ 'var _0x8=new TextDecoder()[_0x1[6]](_0x7);',
+ 'document[_0x1[0]]();',
+ 'document[_0x1[1]](_0x8);',
+ 'document[_0x1[2]]();',
+ '})();',
+ '<\/script>',
+ '</body>',
+ '</html>'
+ ].join('\n');
+ return decoder;
+ }
+
+ // ========== 混码执行 ==========
+ obfBtn.addEventListener('click', function(){
+ const src = sourceCode.value.trim();
+ if (!src){ showToast('请先导入或粘贴 HTML 代码'); return; }
+ obfBtn.disabled = true;
+ obfBtn.textContent = '混码中...';
+ // 用 setTimeout 让 UI 先更新
+ setTimeout(function(){
+ try {
+ const result = encodeHTML(src);
+ const output = generateOutputHTML(result.data, result.key);
+ resultCode.value = output;
+ resultStats.textContent = '字符数：' + output.length;
+ const ratio = ((output.length / src.length) * 100).toFixed(1);
+ ratioStats.textContent = '体积比：' + ratio + '%';
+ resultSection.classList.remove('hidden');
+ previewSection.classList.remove('hidden');
+ // 在 iframe 中预览混码后的效果
+ previewFrame.srcdoc = output;
+ showToast('混码完成！');
+ // 滚动到结果区
+ resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+ } catch (err){
+ showToast('混码失败：' + err.message);
+ console.error(err);
+ } finally {
+ obfBtn.disabled = false;
+ obfBtn.textContent = '🔒 开始混码';
+ }
+ }, 50);
+ });
+
+ // ========== 复制代码 ==========
+ copyBtn.addEventListener('click', function(){
+ resultCode.select();
+ resultCode.setSelectionRange(0, 99999999);
+ try {
+ document.execCommand('copy');
+ showToast('代码已复制到剪贴板');
+ } catch (e){
+ navigator.clipboard.writeText(resultCode.value).then(function(){
+ showToast('代码已复制到剪贴板');
+ }).catch(function(){
+ showToast('复制失败，请手动选择复制');
+ });
+ }
+ window.getSelection().removeAllRanges();
+ });
+
+ // ========== 导出下载 ==========
+ downloadBtn.addEventListener('click', function(){
+ const content = resultCode.value;
+ if (!content){ showToast('没有可导出的内容'); return; }
+ const blob = new Blob([content], { type: 'text/html;charset=utf-8' });
+ const url = URL.createObjectURL(blob);
+ const a = document.createElement('a');
+ const timestamp = new Date().toISOString().slice(0,10).replace(/-/g,'');
+ a.href = url;
+ a.download = 'obfuscated_' + timestamp + '.html';
+ document.body.appendChild(a);
+ a.click();
+ document.body.removeChild(a);
+ setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+ showToast('文件已导出下载');
+ });
+})();
+</script>
+</body>
+</html>

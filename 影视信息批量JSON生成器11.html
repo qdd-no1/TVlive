@@ -1,0 +1,1245 @@
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>影视信息批量 JSON 生成器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .editing-row { background-color: #eff6ff !important; border-left: 4px solid #3b82f6; }
+        html,body{height:100%;}
+        .page-wrap{height:auto;overflow:visible;}
+        @media (min-width:1280px){
+            .page-wrap{height:calc(100vh - 72px);overflow:hidden;}
+        }
+        .left-fixed-panel{ height:100%; overflow-y:auto; padding-right:4px; }
+        .right-scroll-panel{ height:100%; overflow-y:auto; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+<nav class="bg-white shadow-sm z-50">
+    <div class="container mx-auto px-4 py-4 max-w-[1600px] flex flex-wrap justify-between items-center gap-3">
+        <div class="flex items-center space-x-2">
+            <i class="fa fa-film text-blue-600 text-2xl"></i>
+            <h1 class="text-xl font-bold text-gray-800">影视数据生成器</h1>
+        </div>
+        <div class="space-x-2 flex flex-wrap items-center">
+            <label class="cursor-pointer text-sm text-green-600 hover:text-green-800 font-medium transition-colors flex items-center">
+                <i class="fa fa-upload mr-1"></i>导入 JSON
+                <input type="file" id="importFile" accept=".json,.txt" class="hidden" onchange="app.importJSON(this)">
+            </label>
+            <label class="cursor-pointer text-sm text-orange-600 hover:text-orange-800 font-medium transition-colors flex items-center">
+                <i class="fa fa-file-code-o mr-1"></i>导入 js 模板
+                <input type="file" id="selectJsFile" accept=".js" class="hidden" onchange="app.importJsMock(this)">
+            </label>
+            <button onclick="app.injectToJsFile()" class="text-sm text-amber-600 hover:text-amber-800 font-medium transition-colors flex items-center">
+                <i class="fa fa-file-text-o mr-1"></i>导出 js 数据
+            </button>
+            <button onclick="app.saveLocal()" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors">
+                <i class="fa fa-save mr-1"></i>保存本地
+            </button>
+            <button onclick="app.loadLocal()" class="text-sm text-teal-600 hover:text-teal-800 font-medium transition-colors">
+                <i class="fa fa-folder-open mr-1"></i>加载本地
+            </button>
+            <button onclick="app.clearAll()" class="text-sm text-red-500 hover:text-red-700 font-medium transition-colors">
+                <i class="fa fa-trash-o mr-1"></i>清空
+            </button>
+            <button onclick="app.exportJSON()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-md hover:shadow-lg">
+                导出 JSON
+            </button>
+        </div>
+    </div>
+</nav>
+<div class="container mx-auto px-4 max-w-[1600px] page-wrap">
+    <div class="grid xl:grid-cols-12 gap-6 xl:gap-8 h-full">
+        <!-- 左侧新增条目 -->
+        <div class="xl:col-span-3 left-fixed-panel py-6">
+            <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100 relative">
+                <div id="editModeBadge" class="hidden absolute -top-3 right-4 bg-orange-500 text-white text-xs px-3 py-1 rounded-full shadow-md">
+                    <i class="fa fa-pencil mr-1"></i>编辑模式
+                </div>
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-lg font-semibold text-gray-800">
+                        <i class="fa fa-plus-circle text-blue-500 mr-2"></i>新增条目
+                    </h2>
+                    <span>当前第 <span id="currentCount">0</span> 条</span>
+                </div>
+                <form id="entryForm" class="space-y-3">
+                    <input type="hidden" id="editIndex" value="-1">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">ID (唯一)</label>
+                            <input type="number" id="id" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="数字ID">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">主类型</label>
+                            <select id="mainType" onchange="app.changeMainType()" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white">
+                                <option value="movie">Movie (电影)</option>
+                                <option value="tv">TV (剧集)</option>
+                                <option value="variety">Variety (综艺)</option>
+                                <option value="anime">Anime (动漫)</option>
+                                <option value="live">Live (直播)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">子分类(subCategory)</label>
+                        <select id="subCategory" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white">
+                            <option value="">请先选择主类型</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">标题</label>
+                        <input type="text" id="title" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="影视标题">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">更新时间戳(updateTime)</label>
+                        <input type="number" id="updateTime" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="自动填充时间戳，可手动修改">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">年份</label>
+                            <input type="text" id="year" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="1998">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">评分</label>
+                            <input type="number" step="0.1" id="rating" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="9.5">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">观看量</label>
+                            <input type="number" id="views" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="980000">
+                        </div>
+                        <div id="durationField">
+                            <label class="block text-xs font-medium text-gray-500 mb-1">时长</label>
+                            <input type="text" id="duration" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="93分钟">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 border-t border-gray-100 pt-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">需要播放密码</label>
+                            <select id="needPassword" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white">
+                                <option value="true">true 需要密码</option>
+                                <option value="false">false 不需要密码</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">播放密码</label>
+                            <input type="text" id="playPassword" value="668899" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="播放密码">
+                        </div>
+                    </div>
+                    <div id="tvFields" class="hidden space-y-4 border-t border-gray-100 pt-4 mt-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">当前集数</label>
+                                <input type="number" id="episodes" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="已更新集数">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">总集数</label>
+                                <input type="number" id="totalEpisodes" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="总集数">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">分集链接 (每行一个 URL)</label>
+                            <textarea id="episodeUrls" rows="4" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono text-xs" placeholder="https://super.ffzy-online6.com/share/...&#10;https://super.ffzy-online6.com/share/..."></textarea>
+                            <p class="text-[10px] text-gray-400 mt-1">每行输入一个链接，系统将自动转换为 JSON 数组</p>
+                        </div>
+                    </div>
+                    <div class="space-y-3 border-t border-gray-100 pt-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">海报 URL</label>
+                            <input type="text" id="poster" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="https://...">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">背景图 URL</label>
+                            <input type="text" id="backdrop" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="https://...">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">剧情简介 (自动去除首尾及中间多余空格)</label>
+                        <textarea id="plot" rows="3" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="剧情描述..."></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">演员阵容</label>
+                        <input type="text" id="cast" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="演员1, 演员2...">
+                    </div>
+                    <div id="videoUrlField">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">视频主链接</label>
+                        <input type="text" id="videoUrl" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="播放地址">
+                        <label class="block text-xs font-medium text-gray-500 mb-1 mt-3">音频链接 (可选，用于在线测试)</label>
+                        <input type="text" id="audioUrl" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="音频地址">
+                    </div>
+                    <div class="pt-2 flex space-x-3">
+                        <button type="button" id="submitBtn" onclick="app.submitEntry()" class="flex-1 bg-gray-800 hover:bg-gray-900 text-white py-3 rounded-lg font-medium transition-all shadow-md active:scale-95 flex justify-center items-center">
+                            <i class="fa fa-plus mr-2"></i> <span id="btnText">添加到列表</span>
+                        </button>
+                        <button type="button" id="cancelEditBtn" onclick="app.cancelEdit()" class="hidden px-4 py-3 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors">
+                            取消
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- 中间：数据列表 -->
+        <div class="xl:col-span-6 right-scroll-panel py-8 space-y-6">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0"><i class="fa fa-list text-sm"></i></div>
+                    <div class="min-w-0">
+                        <p class="text-[10px] text-gray-500">总条目数</p><p class="text-lg font-bold text-gray-800 leading-tight" id="statTotal">0</p>
+                    </div>
+                </div>
+                <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 shrink-0"><i class="fa fa-film text-sm"></i></div>
+                    <div class="min-w-0">
+                        <p class="text-[10px] text-gray-500">电影数量</p><p class="text-lg font-bold text-gray-800 leading-tight" id="statMovie">0</p>
+                    </div>
+                </div>
+                <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 shrink-0"><i class="fa fa-television text-sm"></i></div>
+                    <div class="min-w-0">
+                        <p class="text-[10px] text-gray-500">剧集数量</p><p class="text-lg font-bold text-gray-800 leading-tight" id="statTv">0</p>
+                    </div>
+                </div>
+                <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 shrink-0"><i class="fa fa-filter text-sm"></i></div>
+                    <div class="min-w-0">
+                        <p class="text-[10px] text-gray-500">筛选数量</p><p class="text-lg font-bold text-gray-800 leading-tight" id="statFiltered">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-4 flex flex-wrap gap-2 items-center">
+                <div class="flex items-center gap-2">
+                    <label class="text-sm text-gray-600 whitespace-nowrap">类别</label>
+                    <select id="categoryFilter" onchange="app.handleSearchSort()" class="px-2 py-2 border border-gray-200 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-blue-400">
+                        <option value="all">全部</option>
+                        <option value="tv">电视</option>
+                        <option value="movie">电影</option>
+                        <option value="variety">综艺</option>
+                        <option value="anime">动漫</option>
+                        <option value="live">直播</option>
+                        <option value="drama">剧情</option>
+                        <option value="ethics">伦理</option>
+                        <option value="war">战争</option>
+                        <option value="action">动作</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-2 flex-1 min-w-[120px]">
+                    <i class="fa fa-search text-gray-400"></i>
+                    <input id="searchInput" type="text" placeholder="搜索ID / 标题..." class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-400" oninput="app.handleSearchSort()">
+                </div>
+                <div class="flex items-center gap-2">
+                    <label class="text-sm text-gray-600">排序：</label>
+                    <select id="sortSelect" class="px-2 py-2 border border-gray-200 rounded-lg text-sm bg-white" onchange="app.handleSearchSort()">
+                        <option value="idAsc">ID 升序</option>
+                        <option value="idDesc">ID 降序</option>
+                        <option value="timeAsc">录入时间升序</option>
+                        <option value="timeDesc">录入时间降序</option>
+                        <option value="updateTimeAsc">更新时间升序</option>
+                        <option value="updateTimeDesc">更新时间降序</option>
+                    </select>
+                </div>
+                <button id="filterOngoingBtn" type="button" onclick="app.toggleOngoingFilter()" class="px-2.5 py-2 border border-gray-200 rounded-lg text-sm flex items-center gap-1 transition-colors hover:bg-gray-50 whitespace-nowrap">
+                    <i class="fa fa-filter"></i> <span id="filterOngoingBtnText">仅显示未完结剧集</span>
+                </button>
+            </div>
+            <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+                <div class="p-4 border-b border-gray-100 flex flex-wrap justify-between items-center gap-2 bg-gray-50">
+                    <h3 class="font-semibold text-gray-700">已添加数据列表</h3>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <div class="text-xs text-gray-500"><i class="fa fa-info-circle mr-1"></i>点击条目可编辑，勾选条目可在右侧在线测试</div>
+                        <button id="deleteSelectedBtn" type="button" onclick="app.deleteSelected()" class="shrink-0 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-medium transition-colors flex items-center gap-1 shadow-sm">
+                            <i class="fa fa-trash-o"></i>删除选中 <span id="selectedDeleteCount" class="font-bold">0</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-50 text-gray-500">
+                        <tr>
+                            <th class="px-3 py-3 font-medium w-10">
+                                <input type="checkbox" id="selectAllCheckbox" class="w-4 h-4 accent-blue-600 cursor-pointer" onchange="app.toggleSelectAll(this)" title="全选当前列表">
+                            </th>
+                            <th class="px-3 py-3 font-medium">序号</th>
+                            <th class="px-3 py-3 font-medium">ID</th>
+                            <th class="px-3 py-3 font-medium">标题</th>
+                            <th class="px-3 py-3 font-medium">主类型</th>
+                            <th class="px-3 py-3 font-medium">子分类</th>
+                            <th class="px-3 py-3 font-medium">年份</th>
+                            <th class="px-3 py-3 font-medium">updateTime</th>
+                            <th class="px-3 py-3 font-medium text-right">操作</th>
+                        </tr>
+                        </thead>
+                        <tbody id="dataTableBody" class="divide-y divide-gray-100"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+                <div class="px-4 py-3 bg-gray-900 border-b border-gray-700 flex justify-between items-center">
+                    <i class="fa fa-code mr-2"></i>JSON Preview
+                    <button onclick="app.copyToClipboard()" class="text-xs text-gray-400 hover:text-white transition-colors">
+                        <i class="fa fa-copy mr-1"></i>复制
+                    </button>
+                </div>
+                <pre id="jsonPreview" class="p-4 text-xs text-green-400 font-mono overflow-auto max-h-[300px]">[]</pre>
+            </div>
+        </div>
+        <!-- 最右侧：视频 / 音频在线测试 -->
+        <div class="xl:col-span-3 right-scroll-panel py-8">
+            <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-4 space-y-4 xl:sticky xl:top-8">
+                <h3 class="font-semibold text-gray-700 flex items-center gap-2"><i class="fa fa-play-circle text-green-500"></i>视频 / 音频在线测试</h3>
+                <p class="text-[11px] text-gray-400 leading-relaxed">勾选列表中的数据后，此处显示对应的测试资源，点击即可播放；也可在下方输入任意链接进行测试。</p>
+                <div>
+                    <div class="text-xs font-medium text-gray-500 mb-1 flex items-center justify-between">
+                        <span>测试资源列表</span>
+                        <span id="testSelectedCount" class="text-[10px] text-blue-500 font-normal"></span>
+                    </div>
+                    <div id="testPlayList" class="max-h-44 overflow-y-auto space-y-2 pr-1"></div>
+                </div>
+                <div>
+                    <div class="text-xs font-medium text-gray-500 mb-1">视频播放器</div>
+                    <video id="testVideo" controls preload="metadata" class="w-full rounded-lg bg-black aspect-video"></video>
+                    <p id="nowPlayingLabel" class="text-[10px] text-gray-400 break-all mt-1 min-h-[14px]"></p>
+                </div>
+                <div>
+                    <div class="text-xs font-medium text-gray-500 mb-1">音频播放器</div>
+                    <audio id="testAudio" controls preload="metadata" class="w-full">
+                </div>
+                <div class="border-t border-gray-100 pt-3 space-y-3">
+                    <div>
+                        <label class="text-xs font-medium text-gray-500 block mb-1">自定义视频链接</label>
+                        <div class="flex gap-2">
+                            <input id="customVideoUrl" type="text" class="flex-1 min-w-0 px-2.5 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500" placeholder="粘贴视频 URL">
+                            <button type="button" onclick="app.playCustomVideo()" class="shrink-0 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-medium transition-colors"><i class="fa fa-play mr-1"></i>播放</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-gray-500 block mb-1">自定义音频链接</label>
+                        <div class="flex gap-2">
+                            <input id="customAudioUrl" type="text" class="flex-1 min-w-0 px-2.5 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500" placeholder="粘贴音频 URL">
+                            <button type="button" onclick="app.playCustomAudio()" class="shrink-0 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-colors"><i class="fa fa-play mr-1"></i>播放</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+const app = {
+    data: [],
+    editingIndex: -1,
+    showOnlyOngoing: false,
+    selectedIds: new Set(),
+    storageKey: "movieJsonData",
+    subCategoryOptions: {
+        movie: ["内地", "港台", "日韩", "欧美", "剧情", "战争", "伦理", "动作"],
+        tv: ["内地剧", "港台剧", "日韩剧", "欧美剧"],
+        variety: ["内地综艺", "港台综艺", "日韩综艺", "欧美综艺"],
+        anime: ["内地", "港台", "日韩", "欧美"],
+        live: ["新闻", "体育", "影视频道"]
+    },
+    init() {
+        this.loadLocalSilent();
+        this.pruneSelected();
+        this.updateStats();
+        this.renderTable();
+        this.changeMainType();
+        this.updatePreview();
+        this.updateTestPanel();
+        // 视频真正开始播放时统一更新状态提示（原生/HLS/静音降级都走这里）
+        const v = document.getElementById('testVideo');
+        if (v) {
+            v.addEventListener('playing', () => {
+                const label = document.getElementById('nowPlayingLabel');
+                if (label) label.textContent = '正在播放视频' + (v.muted ? '（静音）' : '') + '：' + (this._currentPlayUrl || '');
+            });
+            v.addEventListener('error', () => {
+                const label = document.getElementById('nowPlayingLabel');
+                if (label) label.textContent = '视频加载失败，请检查链接格式与跨域(CORS)设置';
+            });
+        }
+    },
+    // 清理已被删除数据的选中项
+    pruneSelected() {
+        const validIds = new Set(this.data.map(d => d.id));
+        this.selectedIds = new Set([...this.selectedIds].filter(id => validIds.has(id)));
+    },
+    // ===== 新增：为历史数据中缺失 updateTime 的条目补充当前时间戳（兼容旧本地数据）=====
+    ensureUpdateTime() {
+        const now = Date.now();
+        this.data.forEach(d => {
+            if (d.updateTime === undefined || d.updateTime === null || d.updateTime === "" || isNaN(Number(d.updateTime))) {
+                d.updateTime = now;
+            }
+        });
+    },
+    changeMainType() {
+        const mainType = document.getElementById('mainType').value;
+        const subSelect = document.getElementById('subCategory');
+        subSelect.innerHTML = "";
+        const opts = this.subCategoryOptions[mainType] || [];
+        opts.forEach(optVal => {
+            const op = document.createElement('option');
+            op.value = optVal;
+            op.textContent = optVal;
+            subSelect.appendChild(op);
+        });
+        this.toggleTypeFields();
+    },
+    toggleTypeFields() {
+        const mainType = document.getElementById('mainType').value;
+        const tvFields = document.getElementById('tvFields');
+        const durationField = document.getElementById('durationField');
+        const videoUrlField = document.getElementById('videoUrlField');
+        if (mainType === 'tv' || mainType === 'variety' || mainType === 'anime') {
+            tvFields.classList.remove('hidden');
+            durationField.classList.add('hidden');
+            videoUrlField.classList.add('hidden');
+        } else {
+            tvFields.classList.add('hidden');
+            durationField.classList.remove('hidden');
+            videoUrlField.classList.remove('hidden');
+        }
+    },
+    cleanString(str) {
+        if (!str) return "";
+        return str.trim().replace(/\s+/g, ' ');
+    },
+    handleSearchSort() {
+        this.renderTable();
+    },
+    // 判断条目是否命中下拉类别筛选（电视/电影/综艺/动漫/直播/剧情/伦理/战争/动作）
+    matchCategoryFilter(item) {
+        const catVal = document.getElementById('categoryFilter') ? document.getElementById('categoryFilter').value : 'all';
+        switch (catVal) {
+            case 'all': return true;
+            case 'tv': return item.mainType === 'tv';
+            case 'movie': return item.mainType === 'movie';
+            case 'variety': return item.mainType === 'variety';
+            case 'anime': return item.mainType === 'anime';
+            case 'live': return item.mainType === 'live';
+            case 'drama': return item.subCategory === '剧情';
+            case 'ethics': return item.subCategory === '伦理';
+            case 'war': return item.subCategory === '战争';
+            case 'action': return item.subCategory === '动作';
+            default: return true;
+        }
+    },
+    // 判断条目是否为"未更新完的剧集"：存在总集数且当前集数小于总集数
+    isOngoing(item) {
+        const total = Number(item.totalEpisodes) || 0;
+        const current = Number(item.episodes) || 0;
+        return total > 0 && current < total;
+    },
+    // 切换"仅显示未完结剧集"筛选
+    toggleOngoingFilter() {
+        this.showOnlyOngoing = !this.showOnlyOngoing;
+        const btn = document.getElementById('filterOngoingBtn');
+        const btnText = document.getElementById('filterOngoingBtnText');
+        if (this.showOnlyOngoing) {
+            btn.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
+            btn.classList.remove('border-gray-200', 'hover:bg-gray-50');
+            btnText.textContent = '显示全部剧集';
+        } else {
+            btn.classList.remove('bg-blue-600', 'text-white', 'border-blue-600');
+            btn.classList.add('border-gray-200', 'hover:bg-gray-50');
+            btnText.textContent = '仅显示未完结剧集';
+        }
+        this.renderTable();
+    },
+    getFilterSortedList() {
+        const searchText = document.getElementById('searchInput').value.trim().toLowerCase();
+        const sortVal = document.getElementById('sortSelect').value;
+        let list = this.data.map((item, realIndex) => ({item, realIndex}));
+        list = list.filter(({item}) => this.matchCategoryFilter(item));
+        if (this.showOnlyOngoing) {
+            list = list.filter(({item}) => this.isOngoing(item));
+        }
+        if (searchText) {
+            list = list.filter(({item}) => {
+                const matchId = String(item.id).toLowerCase().includes(searchText);
+                const matchTitle = String(item.title || "").toLowerCase().includes(searchText);
+                return matchId || matchTitle;
+            });
+        }
+        list.sort((a, b) => {
+            const ia = a.item;
+            const ib = b.item;
+            switch (sortVal) {
+                case "idAsc": return ia.id - ib.id;
+                case "idDesc": return ib.id - ia.id;
+                case "timeAsc": return (ia._createTime || 0) - (ib._createTime || 0);
+                case "timeDesc": return (ib._createTime || 0) - (ia._createTime || 0);
+                case "updateTimeAsc": return (Number(ia.updateTime) || 0) - (Number(ib.updateTime) || 0);
+                case "updateTimeDesc": return (Number(ib.updateTime) || 0) - (Number(ia.updateTime) || 0);
+                default: return ia.id - ib.id;
+            }
+        });
+        return list;
+    },
+    submitEntry() {
+        const idInput = document.getElementById('id');
+        const titleInput = document.getElementById('title');
+        if (!idInput.value || !titleInput.value) {
+            alert('ID 和 标题 为必填项');
+            return;
+        }
+        const idVal = parseInt(idInput.value);
+        const mainType = document.getElementById('mainType').value;
+        const subCategory = document.getElementById('subCategory').value;
+        const isDuplicate = this.data.some((item, index) => item.id == idVal && index !== this.editingIndex);
+        if (isDuplicate) {
+            alert('ID 已存在，请使用唯一 ID');
+            return;
+        }
+        const needPasswordVal = document.getElementById('needPassword').value === 'true';
+        const playPasswordVal = document.getElementById('playPassword').value;
+        let updateTimeVal = document.getElementById('updateTime').value;
+        if (!updateTimeVal) updateTimeVal = Date.now();
+        else updateTimeVal = Number(updateTimeVal);
+        const entry = {
+            id: idVal,
+            title: this.cleanString(titleInput.value),
+            mainType: mainType,
+            subCategory: subCategory,
+            updateTime: updateTimeVal,
+            year: document.getElementById('year').value,
+            rating: parseFloat(document.getElementById('rating').value) || 0,
+            views: parseInt(document.getElementById('views').value) || 0,
+            poster: document.getElementById('poster').value,
+            backdrop: document.getElementById('backdrop').value,
+            plot: this.cleanString(document.getElementById('plot').value),
+            cast: this.cleanString(document.getElementById('cast').value),
+            needPassword: needPasswordVal,
+            playPassword: playPasswordVal
+        };
+        // ========== 修复点：live类型和movie一样读取 videoUrl、audioUrl ==========
+        if (mainType === 'movie' || mainType === 'live') {
+            entry.duration = document.getElementById('duration').value;
+            const vUrl = document.getElementById('videoUrl').value;
+            if (vUrl) entry.videoUrl = vUrl;
+            const aUrl = document.getElementById('audioUrl').value.trim();
+            if (aUrl) entry.audioUrl = aUrl;
+        } else {
+            entry.episodes = parseInt(document.getElementById('episodes').value) || 0;
+            entry.totalEpisodes = parseInt(document.getElementById('totalEpisodes').value) || 0;
+            const urlsRaw = document.getElementById('episodeUrls').value;
+            const urlsArray = urlsRaw.split('\n')
+                .map(url => url.trim())
+                .filter(url => url.length > 0);
+            entry.episodeUrls = urlsArray;
+        }
+        if (this.editingIndex === -1) {
+            entry._createTime = Date.now();
+            this.data.push(entry);
+            this.resetForm();
+            idInput.value = idVal + 1;
+        } else {
+            entry._createTime = this.data[this.editingIndex]._createTime || Date.now();
+            this.data[this.editingIndex] = entry;
+            this.cancelEdit();
+        }
+        this.updateStats();
+        this.renderTable();
+        this.updatePreview();
+    },
+    editEntry(index) {
+        const item = this.data[index];
+        this.editingIndex = index;
+        document.getElementById('id').value = item.id;
+        document.getElementById('title').value = item.title;
+        document.getElementById('mainType').value = item.mainType;
+        this.changeMainType();
+        document.getElementById('subCategory').value = item.subCategory || "";
+        document.getElementById('updateTime').value = item.updateTime ?? "";
+        document.getElementById('year').value = item.year;
+        document.getElementById('rating').value = item.rating;
+        document.getElementById('views').value = item.views;
+        document.getElementById('poster').value = item.poster || '';
+        document.getElementById('backdrop').value = item.backdrop || '';
+        document.getElementById('plot').value = item.plot || '';
+        document.getElementById('cast').value = item.cast || '';
+        document.getElementById('needPassword').value = item.needPassword ? 'true' : 'false';
+        document.getElementById('playPassword').value = item.playPassword || '';
+        this.toggleTypeFields();
+        if (item.mainType === 'movie' || item.mainType === 'live') {
+            document.getElementById('duration').value = item.duration || '';
+            document.getElementById('videoUrl').value = item.videoUrl || '';
+            document.getElementById('audioUrl').value = item.audioUrl || '';
+            document.getElementById('episodeUrls').value = item.episodeUrls ? item.episodeUrls.join('\n') : '';
+            document.getElementById('episodes').value = item.episodes || 0;
+            document.getElementById('totalEpisodes').value = item.totalEpisodes || 0;
+        } else {
+            document.getElementById('episodes').value = item.episodes || 0;
+            document.getElementById('totalEpisodes').value = item.totalEpisodes || 0;
+            document.getElementById('episodeUrls').value = item.episodeUrls ? item.episodeUrls.join('\n') : '';
+        }
+        document.getElementById('editModeBadge').classList.remove('hidden');
+        document.getElementById('cancelEditBtn').classList.remove('hidden');
+        this.renderTable(index);
+        document.querySelector('.left-fixed-panel').scrollTop = 0;
+    },
+    cancelEdit() {
+        this.editingIndex = -1;
+        this.resetForm();
+        document.getElementById('editModeBadge').classList.add('hidden');
+        document.getElementById('cancelEditBtn').classList.add('hidden');
+        this.renderTable();
+    },
+    resetForm() {
+        document.getElementById('entryForm').reset();
+        document.getElementById('editIndex').value = "-1";
+        document.getElementById('mainType').value = 'movie';
+        document.getElementById('updateTime').value = Date.now();
+        document.getElementById('year').value = "1998";
+        document.getElementById('rating').value = "9.5";
+        document.getElementById('views').value = "980000";
+        document.getElementById('duration').value = "93 分钟";
+        document.getElementById('needPassword').value = 'true';
+        document.getElementById('playPassword').value = '668899';
+        document.getElementById('episodes').value = "";
+        document.getElementById('totalEpisodes').value = "";
+        document.getElementById('episodeUrls').value = "";
+        document.getElementById('poster').value = "";
+        document.getElementById('backdrop').value = "";
+        document.getElementById('plot').value = "";
+        document.getElementById('cast').value = "";
+        document.getElementById('videoUrl').value = "";
+        document.getElementById('audioUrl').value = "";
+        this.changeMainType();
+    },
+    deleteEntry(index) {
+        if (confirm('确定删除此条目吗？')) {
+            const delItem = this.data[index];
+            if (delItem) this.selectedIds.delete(delItem.id);
+            if (this.editingIndex === index) {
+                this.cancelEdit();
+            } else if (this.editingIndex > index) {
+                this.editingIndex--;
+            }
+            this.data.splice(index, 1);
+            this.updateStats();
+            this.renderTable();
+            this.updatePreview();
+            this.updateTestPanel();
+        }
+    },
+    // 一键删除勾选（含全选）的数据：先提示确认，再批量删除
+    deleteSelected() {
+        if (this.selectedIds.size === 0) {
+            alert('请先在列表中勾选要删除的数据（可逐行勾选，或使用表头全选框）');
+            return;
+        }
+        const count = this.selectedIds.size;
+        const confirmed = confirm('确定删除选中的 ' + count + ' 条数据吗？此操作不可恢复。');
+        if (!confirmed) return;
+        if (this.editingIndex !== -1 && this.selectedIds.has(this.data[this.editingIndex].id)) {
+            this.cancelEdit();
+        }
+        this.data = this.data.filter(d => !this.selectedIds.has(d.id));
+        this.selectedIds.clear();
+        this.updateStats();
+        this.renderTable();
+        this.updatePreview();
+        this.updateTestPanel();
+    },
+    updateStats() {
+        document.getElementById('statTotal').innerText = this.data.length;
+        document.getElementById('currentCount').innerText = this.data.length;
+        document.getElementById('statMovie').innerText = this.data.filter(i => i.mainType === 'movie').length;
+        document.getElementById('statTv').innerText = this.data.filter(i => i.mainType === 'tv').length;
+        this.updateFilteredStat();
+    },
+    // 更新"筛选数量"统计（与列表当前筛选/搜索/排序一致）
+    updateFilteredStat() {
+        const el = document.getElementById('statFiltered');
+        if (el) el.innerText = this.getFilterSortedList().length;
+    },
+    renderTable(highlightIndex = -1) {
+        const tbody = document.getElementById('dataTableBody');
+        tbody.innerHTML = '';
+        if (this.data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-gray-400"><i class="fa fa-inbox text-3xl mb-2 block"></i>暂无数据，请在左侧添加或导入JSON</td></tr>';
+            this.updateFilteredStat();
+            this.syncSelectAllState();
+            return;
+        }
+        const showList = this.getFilterSortedList();
+        if (showList.length === 0) {
+            const emptyTip = this.showOnlyOngoing ? '<i class="fa fa-filter text-3xl mb-2 block"></i>当前没有未更新完的剧集' : '<i class="fa fa-search text-3xl mb-2 block"></i>搜索 / 筛选无匹配结果';
+            tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-gray-400">' + emptyTip + '</td></tr>';
+            this.updateFilteredStat();
+            this.syncSelectAllState();
+            return;
+        }
+        showList.forEach(({item, realIndex}, idx) => {
+            const tr = document.createElement('tr');
+            if (realIndex === highlightIndex) {
+                tr.className = 'editing-row transition-colors group cursor-pointer';
+            } else {
+                tr.className = 'hover:bg-gray-50 transition-colors group cursor-pointer';
+            }
+            tr.onclick = (e) => {
+                if (!e.target.closest('.delete-btn') && !e.target.closest('.row-checkbox')) {
+                    this.editEntry(realIndex);
+                }
+            };
+            const typeBadge = item.mainType === 'movie' ? '<span class="px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-700">MOVIE</span>' : `<span class="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-700">${String(item.mainType || '').toUpperCase()}</span>`;
+            // 未完结剧集在标题后加一个小标记
+            const ongoingTag = this.isOngoing(item) ? ` <span class="ml-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-100 text-orange-600">更新中 ${item.episodes || 0}/${item.totalEpisodes || 0}</span>` : '';
+            const checked = this.selectedIds.has(item.id) ? 'checked' : '';
+            const ts = item.updateTime ?? '-';
+            tr.innerHTML = `
+                <td class="px-3 py-3"><input type="checkbox" class="row-checkbox w-4 h-4 accent-blue-600 cursor-pointer" data-id="${item.id}" ${checked} onchange="app.onRowCheckboxChange(this)"></td>
+                <td class="px-3 py-3 text-xs text-gray-400">${idx + 1}</td>
+                <td class="px-3 py-3 font-mono text-gray-600">${item.id}</td>
+                <td class="px-3 py-3 font-medium text-gray-800">${item.title}${ongoingTag}</td>
+                <td class="px-3 py-3">${typeBadge}</td>
+                <td class="px-3 py-3 text-gray-600 text-sm">${item.subCategory || "-"}</td>
+                <td class="px-3 py-3 text-gray-500">${item.year}</td>
+                <td class="px-3 py-3 text-gray-500 text-xs">${ts}</td>
+                <td class="px-3 py-3 text-right"><button onclick="app.deleteEntry(${realIndex})" class="delete-btn text-red-400 hover:text-red-600 transition-colors p-2 rounded hover:bg-red-50"><i class="fa fa-trash-o"></i></button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+        this.updateFilteredStat();
+        this.syncSelectAllState();
+    },
+    // 行勾选框变化
+    onRowCheckboxChange(cb) {
+        const id = Number(cb.dataset.id);
+        if (cb.checked) this.selectedIds.add(id);
+        else this.selectedIds.delete(id);
+        this.updateTestPanel();
+        this.syncSelectAllState();
+    },
+    // 表头全选框：选中/取消当前筛选列表内的全部条目
+    toggleSelectAll(cb) {
+        const showList = this.getFilterSortedList();
+        if (cb.checked) {
+            showList.forEach(({item}) => this.selectedIds.add(item.id));
+        } else {
+            showList.forEach(({item}) => this.selectedIds.delete(item.id));
+        }
+        this.renderTable();
+        this.updateTestPanel();
+    },
+    // 同步表头全选框的选中 / 半选状态
+    syncSelectAllState() {
+        const cb = document.getElementById('selectAllCheckbox');
+        if (!cb) return;
+        const showList = this.getFilterSortedList();
+        const count = showList.length;
+        if (count === 0) {
+            cb.checked = false;
+            cb.indeterminate = false;
+            return;
+        }
+        const checkedCount = showList.filter(({item}) => this.selectedIds.has(item.id)).length;
+        cb.checked = (checkedCount === count);
+        cb.indeterminate = (checkedCount > 0 && checkedCount < count);
+    },
+    // 获取条目的可测试播放链接
+    getItemPlayUrls(item) {
+        const urls = [];
+        if (item.videoUrl) urls.push({label: '视频主链接', url: item.videoUrl, kind: 'video'});
+        if (item.audioUrl) urls.push({label: '音频链接', url: item.audioUrl, kind: 'audio'});
+        if (Array.isArray(item.episodeUrls) && item.episodeUrls.length) {
+            item.episodeUrls.forEach((url, i) => {
+                urls.push({label: '第' + (i + 1) + '集', url: url, kind: 'video'});
+            });
+        }
+        return urls;
+    },
+    // 渲染最右侧测试资源列表（与勾选的数据相关）
+    updateTestPanel() {
+        const container = document.getElementById('testPlayList');
+        if (!container) return;
+        const countEl = document.getElementById('testSelectedCount');
+        const selectedItems = this.data.filter(d => this.selectedIds.has(d.id));
+        if (countEl) countEl.textContent = '已选 ' + selectedItems.length + ' 条';
+        // 同步"删除选中"按钮的计数与可用状态
+        const delCountEl = document.getElementById('selectedDeleteCount');
+        if (delCountEl) delCountEl.textContent = selectedItems.length;
+        const delBtn = document.getElementById('deleteSelectedBtn');
+        
+if (delBtn) {
+  if (selectedItems.length === 0) {
+  delBtn.classList.add('opacity-50', 'cursor-not-allowed');
+  } else {
+  delBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+  }
+  }
+  container.innerHTML = '';
+  if (selectedItems.length === 0) {
+  const empty = document.createElement('div');
+  empty.className = 'text-xs text-gray-400 text-center py-4 bg-gray-50 rounded-lg leading-relaxed';
+  empty.innerHTML = '<i class="fa fa-hand-pointer-o mr-1"></i>请在列表中勾选数据<br>此处显示对应的测试视频 / 音频';
+  container.appendChild(empty);
+  return;
+  }
+  selectedItems.forEach(item => {
+  const block = document.createElement('div');
+  block.className = 'border border-gray-100 rounded-lg p-2';
+  const titleEl = document.createElement('div');
+  titleEl.className = 'text-xs font-semibold text-gray-700 mb-1 truncate';
+  titleEl.textContent = item.title + (item.year ? ' (' + item.year + ')' : '');
+  block.appendChild(titleEl);
+  const urls = this.getItemPlayUrls(item);
+  if (urls.length === 0) {
+  const tip = document.createElement('div');
+  tip.className = 'text-[10px] text-gray-400';
+  tip.textContent = '该数据暂无播放链接';
+  block.appendChild(tip);
+  } else {
+  urls.forEach(u => {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'w-full text-left text-[11px] px-2 py-1.5 rounded mb-1 flex items-center gap-1.5 transition-colors ' +
+  (u.kind === 'audio' ? 'bg-blue-50 text-blue-600 hover:bg-blue-100' : 'bg-green-50 text-green-700 hover:bg-green-100');
+  btn.dataset.url = u.url;
+  btn.dataset.kind = u.kind || 'video';
+  btn.onclick = () => this.playTestItem(btn);
+  const icon = document.createElement('i');
+  icon.className = 'fa ' + (u.kind === 'audio' ? 'fa-music' : 'fa-play') + ' text-[10px] shrink-0';
+  const span = document.createElement('span');
+  span.className = 'truncate';
+  span.textContent = u.label;
+  btn.appendChild(icon);
+  btn.appendChild(span);
+  block.appendChild(btn);
+  });
+  }
+  container.appendChild(block);
+  });
+  },
+  // 点击测试资源条目播放
+  playTestItem(btn) {
+  const url = btn.dataset.url;
+  const kind = btn.dataset.kind;
+  if (!url) return;
+  if (kind === 'audio') this.playAudio(url);
+  else this.playVideo(url);
+  },
+  // m3u8(HLS) 识别：链接包含 m3u8 字样即视为 HLS 流
+  isHlsUrl(url) {
+  return /m3u8/i.test(url);
+  },
+  // 尝试播放：优先有声播放，被浏览器自动播放策略拦截时降级为静音播放，仍不行则提示手动点击
+  tryPlayMedia(v, label, url) {
+  const attempt = (isMuted) => {
+  const p = v.play();
+  if (p && p.catch) {
+  p.catch(() => {
+  if (!isMuted) {
+  v.muted = true;
+  attempt(true);
+  } else if (label) {
+  label.textContent = '播放被浏览器拦截，请点击播放器 ▶ 播放：' + url;
+  }
+  });
+  }
+  };
+  attempt(false);
+  },
+  // 播放视频：m3u8 走 hls.js 转封装，其余走原生播放器
+  playVideo(url) {
+  const v = document.getElementById('testVideo');
+  const label = document.getElementById('nowPlayingLabel');
+  if (!v) return;
+  this._currentPlayUrl = url;
+  // 销毁上一个 HLS 实例，避免串流
+  if (this._hlsVideo) { this._hlsVideo.destroy(); this._hlsVideo = null; }
+  const isHls = this.isHlsUrl(url);
+  if (isHls && window.Hls && Hls.isSupported()) {
+  const hls = new Hls();
+  this._hlsVideo = hls;
+  hls.loadSource(url);
+  hls.attachMedia(v);
+  hls.on(Hls.Events.MANIFEST_PARSED, () => { this.tryPlayMedia(v, label, url); });
+  hls.on(Hls.Events.ERROR, (e, data) => {
+  if (!data) return;
+  if (label && data.fatal) {
+  label.textContent = 'HLS 错误[' + data.type + '/' + data.details + ']：' + url;
+  }
+  if (!data.fatal) return;
+  if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+  hls.startLoad();
+  } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+  hls.recoverMediaError();
+  } else {
+  if (label) label.textContent = 'HLS 播放失败，请检查链接是否可访问且允许跨域(CORS)：' + url;
+  }
+  });
+  if (label) label.textContent = '正在加载 HLS 视频：' + url;
+  } else if (isHls && !window.Hls) {
+  if (label) label.textContent = 'HLS 播放库加载失败，无法播放 m3u8：' + url;
+  } else {
+  v.src = url;
+  this.tryPlayMedia(v, label, url);
+  if (label) label.textContent = '正在播放视频：' + url;
+  }
+  },
+  // 播放音频：同样支持 m3u8(HLS) 音频流
+  playAudio(url) {
+  const a = document.getElementById('testAudio');
+  if (!a) return;
+  if (this._hlsAudio) { this._hlsAudio.destroy(); this._hlsAudio = null; }
+  const isHls = this.isHlsUrl(url);
+  if (isHls && window.Hls && Hls.isSupported()) {
+  const hls = new Hls();
+  this._hlsAudio = hls;
+  hls.loadSource(url);
+  hls.attachMedia(a);
+  hls.on(Hls.Events.MANIFEST_PARSED, () => {
+  a.play().catch(() => {
+  a.muted = true;
+  a.play().catch(() => {});
+  });
+  });
+  hls.on(Hls.Events.ERROR, (e, data) => {
+  if (!data || !data.fatal) return;
+  if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+  hls.startLoad();
+  } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+  hls.recoverMediaError();
+  } else {
+  alert('HLS 音频播放失败，请检查链接是否可访问且允许跨域(CORS)：' + url);
+  }
+  });
+  } else if (isHls && !window.Hls) {
+  alert('HLS 播放库加载失败，无法播放 m3u8 音频');
+  } else {
+  a.src = url;
+  a.play().catch(() => {
+  a.muted = true;
+  a.play().catch(() => {
+  alert('音频播放失败：' + url + '（可能被浏览器拦截或链接不可访问）');
+  });
+  });
+  }
+  },
+  playCustomVideo() {
+  const url = document.getElementById('customVideoUrl').value.trim();
+  if (!url) { alert('请输入视频链接'); return; }
+  this.playVideo(url);
+  },
+  playCustomAudio() {
+  const url = document.getElementById('customAudioUrl').value.trim();
+  if (!url) { alert('请输入音频链接'); return; }
+  this.playAudio(url);
+  },
+  // 获取导出数据，movie自动剔除分集字段；确保每条导出数据都包含 updateTime
+  getExportData() {
+  return this.data.map(d => {
+  const o = {...d};
+  // ===== 修复点：兜底补充 updateTime，保证导出数据始终包含该字段 =====
+  if (o.updateTime === undefined || o.updateTime === null || o.updateTime === "" || isNaN(Number(o.updateTime))) {
+  o.updateTime = Date.now();
+  }
+  delete o._createTime;
+  if(o.mainType === "movie"){
+  delete o.episodes;
+  delete o.totalEpisodes;
+  delete o.episodeUrls;
+  }
+  return o;
+  })
+  },
+  updatePreview() {
+  const exportData = this.getExportData();
+  const jsonStr = JSON.stringify(exportData, null, 4);
+  document.getElementById('jsonPreview').textContent = jsonStr;
+  },
+  parseLooseJson(rawText) {
+  try {
+  return JSON.parse(rawText);
+  } catch (e) {
+  let fixed = rawText.replace(/'/g, '"');
+  fixed = fixed.replace(/([{,]\s)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":');
+  return JSON.parse(fixed);
+  }
+  },
+  // 把导入的原始数据规范化
+  normalizeRawItem(rawItem) {
+  // 修复：读取原始mainType，不再强制写死movie
+  let rawType = rawItem.mainType ?? rawItem.Type ?? "movie";
+  // ===== 修复点：updateTime 处理 =====
+  // 原始数据已有 updateTime 则保留并转为数字；没有（含空值 / 非法值）则自动填入当前导入时间戳
+  let updateTimeVal = rawItem.updateTime;
+  if (updateTimeVal === undefined || updateTimeVal === null || updateTimeVal === "") {
+  updateTimeVal = Date.now();
+  } else {
+  updateTimeVal = Number(updateTimeVal);
+  if (isNaN(updateTimeVal)) updateTimeVal = Date.now();
+  }
+  const newItem = {
+  id: Number(rawItem.id),
+  title: String(rawItem.title),
+  mainType: rawType,
+  subCategory: rawItem.subCategory ?? "",
+  updateTime: updateTimeVal,
+  year: rawItem.year || "",
+  rating: Number(rawItem.rating || 0),
+  views: Number(rawItem.views || 0),
+  poster: rawItem.poster || "",
+  backdrop: rawItem.backdrop || "",
+  plot: rawItem.plot || "",
+  cast: rawItem.cast || "",
+  needPassword: Boolean(rawItem.needPassword ?? true),
+  playPassword: rawItem.playPassword ?? "668899",
+  _createTime: Date.now()
+  };
+  newItem.duration = rawItem.duration || "";
+  if (rawItem.videoUrl) newItem.videoUrl = rawItem.videoUrl;
+  if (rawItem.audioUrl) newItem.audioUrl = rawItem.audioUrl;
+  newItem.episodes = Number(rawItem.episodes || 0);
+  newItem.totalEpisodes = Number(rawItem.totalEpisodes || 0);
+  if (Array.isArray(rawItem.episodeUrls)) {
+  newItem.episodeUrls = rawItem.episodeUrls;
+  } else {
+  newItem.episodeUrls = [];
+  }
+  return newItem;
+  },
+  importJSON(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+  try {
+  const raw = e.target.result;
+  const importedData = this.parseLooseJson(raw);
+  if (!Array.isArray(importedData)) {
+  alert('数据错误：顶层必须是数组 []');
+  return;
+  }
+  let conflictCount = 0;
+  let importedCount = 0;
+  importedData.forEach(rawItem => {
+  if (!rawItem.id || !rawItem.title) return;
+  const newItem = this.normalizeRawItem(rawItem);
+  const exists = this.data.some(d => d.id === newItem.id);
+  if (exists) {
+  conflictCount++;
+  } else {
+  this.data.push(newItem);
+  importedCount++;
+  }
+  });
+  this.pruneSelected();
+  if (conflictCount > 0) {
+  alert('导入完成。注意：有 ' + conflictCount + ' 条数据因ID冲突未被导入。');
+  } else {
+  alert('成功导入 ' + importedCount + ' 条数据！');
+  }
+  this.updateStats();
+  this.renderTable();
+  this.updatePreview();
+  this.updateTestPanel();
+  } catch (error) {
+  alert('解析失败，文件格式无法识别！\n' + error.message);
+  console.error(error);
+  }
+  input.value = '';
+  };
+  reader.readAsText(file);
+  },
+  importJsMock(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+  try {
+  let jsText = e.target.result;
+  jsText = jsText.replace(/\/\/.*/g, "");
+  jsText = jsText.replace(/\/\*[\s\S]*?\*\//g, "");
+  const matchArr = jsText.match(/mockData\s*(?:=|:)\s*(\[[\s\S]*?\])/);
+  if (!matchArr || !matchArr[1]) {
+  alert("JS 文件找不到 mockData 数组，请确认 JS 内存在 mockData=[...]");
+  input.value = "";
+  return;
+  }
+  const arrayStr = matchArr[1];
+  const importedData = this.parseLooseJson(arrayStr);
+  if (!Array.isArray(importedData)) {
+  alert("mockData 不是数组！");
+  input.value = "";
+  return;
+  }
+  const mode = prompt("请选择导入模式：\n1 = 覆盖现有数据 \n2 = 追加数据", "2");
+  if (mode === null) {
+  input.value = "";
+  return;
+  }
+  const normalizeList = [];
+  importedData.forEach(rawItem => {
+  if (!rawItem.id || !rawItem.title) return;
+  normalizeList.push(this.normalizeRawItem(rawItem));
+  });
+  if (mode.trim() === "1") {
+  this.cancelEdit();
+  this.data = normalizeList;
+  alert("覆盖模式完成，共加载 " + normalizeList.length + " 条数据");
+  } else {
+  let conflictCount = 0;
+  let addedCount = 0;
+  normalizeList.forEach(newItem => {
+  const exists = this.data.some(d => d.id === newItem.id);
+  if (exists) conflictCount++;
+  else {
+  this.data.push(newItem);
+  addedCount++;
+  }
+  });
+  if (conflictCount > 0) {
+  alert("JS模板导入完成。注意：有 " + conflictCount + " 条数据因ID冲突未被导入。");
+  } else {
+  alert("成功从JS模板导入 " + addedCount + " 条数据！");
+  }
+  }
+  this.pruneSelected();
+  this.updateStats();
+  this.renderTable();
+  this.updatePreview();
+  this.updateTestPanel();
+  } catch (err) {
+  alert("JS 解析失败:" + err.message);
+  console.error(err);
+  }
+  input.value = "";
+  };
+  reader.readAsText(file);
+  },
+  injectToJsFile() {
+  if (this.data.length === 0) {
+  alert("当前没有数据，不能注入 JS 文件");
+  return;
+  }
+  const exportData = this.getExportData();
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.js';
+  input.onchange = (ev) => {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+  let sourceCode = e.target.result;
+  const newMockJson = JSON.stringify(exportData, null, 4);
+  const reg = /mockData\s*(=|:)\s*\[[\s\S]*?\]/;
+  if (!reg.test(sourceCode)) {
+  alert("在 JS 文件中没有找到 mockData:[ ] / mockData = [] 块，请检查文件！");
+  return;
+  }
+  let symbolMatch = sourceCode.match(/mockData\s*(=|:)\s*\[/);
+  const symbol = symbolMatch ? symbolMatch[1] : ":";
+  const replaceStr = "mockData " + symbol + " " + newMockJson;
+  const outputCode = sourceCode.replace(reg, replaceStr);
+  const blob = new Blob([outputCode], {type: "application/javascript"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = file.name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  alert("已将当前数据写入 mockData，下载文件：" + file.name);
+  };
+  reader.readAsText(file);
+  };
+  input.click();
+  },
+  exportJSON() {
+  if (this.data.length === 0) {
+  alert('没有数据可导出');
+  return;
+  }
+  const exportData = this.getExportData();
+  const jsonStr = JSON.stringify(exportData, null, 4);
+  const blob = new Blob([jsonStr], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'movies_data_' + new Date().getTime() + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  },
+  copyToClipboard() {
+  const exportData = this.getExportData();
+  const jsonStr = JSON.stringify(exportData, null, 4);
+  navigator.clipboard.writeText(jsonStr).then(() => {
+  alert('JSON 已复制到剪贴板');
+  }).catch(err => {
+  console.error('复制失败', err);
+  });
+  },
+  clearAll() {
+  if (confirm('确定清空所有数据吗？此操作不可恢复。')) {
+  this.cancelEdit();
+  this.data = [];
+  this.selectedIds.clear();
+  localStorage.removeItem(this.storageKey);
+  this.updateStats();
+  this.renderTable();
+  this.updatePreview();
+  this.updateTestPanel();
+  }
+  },
+  saveLocal() {
+  localStorage.setItem(this.storageKey, JSON.stringify(this.data));
+  alert("数据已保存到浏览器本地！刷新页面不会丢失");
+  },
+  loadLocalSilent() {
+  const saved = localStorage.getItem(this.storageKey);
+  if (saved) {
+  try {
+  this.data = JSON.parse(saved);
+  // ===== 修复点：兼容旧本地数据，补齐缺失的 updateTime =====
+  this.ensureUpdateTime();
+  this.pruneSelected();
+  } catch (e) {
+  localStorage.removeItem(this.storageKey);
+  }
+  }
+  },
+  loadLocal() {
+  const saved = localStorage.getItem(this.storageKey);
+  if (!saved) {
+  alert("本地暂无保存的数据");
+  return;
+  }
+  try {
+  this.data = JSON.parse(saved);
+  // ===== 修复点：兼容旧本地数据，补齐缺失的 updateTime =====
+  this.ensureUpdateTime();
+  this.cancelEdit();
+  this.pruneSelected();
+  this.updateStats();
+  this.renderTable();
+  this.updatePreview();
+  this.updateTestPanel();
+  alert("已加载本地保存的数据");
+  } catch (err) {
+  alert("本地数据损坏，已清除");
+  localStorage.removeItem(this.storageKey);
+  }
+  }
+  };
+  window.addEventListener('DOMContentLoaded', () => {
+  app.init();
+  });
+</script></body></html>
