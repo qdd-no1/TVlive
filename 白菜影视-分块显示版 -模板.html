@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>白菜影视</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #111827;
+            color: #fff;
+        }
+        .section-grid {
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: repeat(auto-fill, minmax(130px,1fr));
+        }
+        @media(min-width:768px){
+            .section-grid{
+                grid-template-columns: repeat(auto-fill, minmax(180px,1fr));
+            }
+        }
+        #player-modal > div{
+            width:100%;
+            max-width:1200px;
+        }
+        /* ===== 全屏模式布局修复：确保视频与进度条完整显示 ===== */
+        #player-modal > div:fullscreen,
+        #player-modal > div:-webkit-full-screen {
+            max-width: none;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            margin: 0;
+        }
+        /* 全屏时视频区域弹性填充剩余空间 */
+        #player-modal > div:fullscreen .player-wrap,
+        #player-modal > div:-webkit-full-screen .player-wrap {
+            flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        /* 全屏时视频按原始比例缩放，不超出可用区域 */
+        #player-modal > div:fullscreen #main-player,
+        #player-modal > div:-webkit-full-screen #main-player {
+            width: auto;
+            height: auto;
+            max-width: 100%;
+            max-height: 100%;
+            aspect-ratio: auto;
+        }
+        #main-player{
+            width:100%;
+            height:auto;
+            aspect-ratio:16/9;
+        }
+        /* 播放器容器相对定位，用于跑马灯悬浮 */
+        .player-wrap{
+            position: relative;
+            overflow: hidden;
+        }
+        /* 视频上方跑马灯 */
+        .video-marquee-box{
+            position: absolute;
+            top: 8px;
+            left: 0;
+            width: 100%;
+            overflow: hidden;
+            z-index: 10;
+            pointer-events: none; /* 不阻挡鼠标操作视频控件 */
+        }
+        .video-marquee-text {
+            white-space: nowrap;
+            font-size: 22px;
+            font-weight: bold;
+            color: #ff3333;
+            background: transparent;
+            text-shadow: 2px 2px 4px #000000;
+            /* 默认隐藏在右侧屏幕外，由 JS 主动触发滚动 */
+            transform: translateX(100vw);
+            opacity: 0;
+            display: inline-block;
+            will-change: transform, opacity;
+        }
+        /* JS 触发时添加该类，执行一次滚动 */
+        .video-marquee-text.scrolling {
+            animation: marqueeScroll 12s linear;
+        }
+        @keyframes marqueeScroll {
+            0%   { transform: translateX(100vw);  opacity: 1; }
+            95%  { transform: translateX(-100%);  opacity: 1; }
+            100% { transform: translateX(-100%);  opacity: 0; }
+        }
+        .poster-card:hover .type-badge{
+            transform: translateY(0);
+            opacity: 1;
+        }
+        .hidden {
+            display: none !important;
+        }
+        #detail-modal, #player-modal {
+            display: none;
+        }
+        .episode-btn.active {
+            background-color: #2563eb;
+            color:#fff;
+        }
+        /* 页面顶部跑马灯动画 */
+        @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+        .marquee-text{
+            animation: marquee 25s linear infinite;
+            white-space: nowrap;
+            font-size: 24px;
+            font-weight: 900;
+            color: red;
+            background-color: transparent;
+            line-height: 1.5;
+            padding: 10px 0;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        /* 图片抗模糊优化 */
+        img{
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
+        .poster-img{
+            width:100%;
+            aspect-ratio:2/3;
+            object-fit:cover;
+            border-radius:8px;
+            background:#222;
+        }
+        /* 版块样式 */
+        .section-wrap{
+            margin-bottom:3rem;
+        }
+        .section-header{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-bottom:1rem;
+            border-left:4px solid #3b82f6;
+            padding-left:12px;
+        }
+        /* 分页按钮样式 */
+        .page-btn{
+            padding:6px 12px;
+            border-radius:6px;
+            background:#374151;
+            color:#fff;
+        }
+        .page-btn:hover:not(.disabled){
+            background:#3b82f6;
+        }
+        .page-btn.disabled{
+            opacity:0.4;
+            cursor:not-allowed;
+        }
+        .page-btn.active{
+            background:#3b82f6;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Hero轮播区域 -->
+    <section id="hero-section" class="relative h-[50vh] md:h-[70vh] overflow-hidden hidden">
+        <img id="hero-backdrop" class="absolute inset-0 w-full h-full object-cover">
+        <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/70 to-transparent"></div>
+        <!-- 左上角Logo -->
+        <div class="absolute top-0 left-3 z-20">
+            <div class=" backdrop-blur-sm px-3 py-2 rounded-lg">
+                <span class="text-xl font-bold text-blue-400">🥬白菜影视</span>
+            </div>
+        </div>
+        <!-- 跑马灯公告 -->
+        <div class="bg-blue-900 text-white py-1 overflow-hidden text-sm">
+            <div class="marquee-text">白菜影视欢迎你，本资源来源于网络，仅供学习展示使用，若发现有侵权行为，即刻删除。他人若用于非法用途，追究其法律责任。欢迎植根心田！</div>
+        </div>
+        <div class="absolute bottom-0 left-0 w-full p-4 md:p-10">
+            <span id="hero-tag"></span>
+            <h2 id="hero-title" class="text-2xl md:text-5xl font-bold mt-2"></h2>
+            <div class="flex flex-wrap gap-3 mt-2 text-sm md:text-base text-gray-200">
+                <span>⭐ <span id="hero-rating"></span></span>
+                <span>📅 <span id="hero-year"></span></span>
+                <span>👁 <span id="hero-views"></span></span>
+            </div>
+            <p id="hero-plot" class="mt-3 max-w-3xl text-gray-300 text-sm md:text-base line-clamp-3"></p>
+            <div class="flex gap-3 mt-4">
+                <button onclick="app.playHeroVideo()" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium">
+                    <i class="fa fa-play mr-2"></i>立即播放
+                </button>
+                <button onclick="app.showHeroDetails()" class="px-5 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg font-medium">
+                    <i class="fa fa-info-circle mr-2"></i>详情
+                </button>
+            </div>
+        </div>
+    </section>
+    <div class="container mx-auto px-3 py-6">
+        <!-- 搜索&导航 -->
+        <div class="flex flex-col gap-4 mb-6">
+            <div class="flex flex-wrap gap-2">
+                <button class="nav-btn px-3 py-2 rounded bg-gray-600/50 text-blue-400 font-semibold" data-filter="all" onclick="app.setFilter('all')">全部</button>
+                <button class="nav-btn px-3 py-2 rounded bg-transparent text-gray-300" data-filter="movie" onclick="app.setFilter('movie')">电影</button>
+                <button class="nav-btn px-3 py-2 rounded bg-transparent text-gray-300" data-filter="tv" onclick="app.setFilter('tv')">电视剧</button>
+                <button class="nav-btn px-3 py-2 rounded bg-transparent text-gray-300" data-filter="variety" onclick="app.setFilter('variety')">综艺</button>
+                <button class="nav-btn px-3 py-2 rounded bg-transparent text-gray-300" data-filter="anime" onclick="app.setFilter('anime')">动画</button>
+                <button class="nav-btn px-3 py-2 rounded bg-transparent text-gray-300" data-filter="live" onclick="app.setFilter('live')">直播</button>
+            </div>
+            <div class="flex flex-wrap gap-2 items-center">
+                <input id="search-input" type="text" placeholder="搜索影视..." class="flex-1 min-w-[200px] bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white outline-none">
+                <select onchange="app.setSort(this.value)" class="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white outline-none">
+                    <option value="newest">最新</option>
+                    <option value="rating">评分</option>
+                    <option value="views">热度</option>
+                </select>
+                <button onclick="app.resetFilter()" class="px-3 py-2 bg-gray-700 rounded hover:bg-gray-600">重置</button>
+            </div>
+            <!-- 二级分类下拉筛选 -->
+            <div class="flex flex-wrap gap-2 md:gap-4 items-center my-2">
+                <!-- 电影分类下拉 -->
+                <div>
+                    <label class="text-gray-300 text-sm mr-1">电影:</label>
+                    <select class="sub-category-select bg-gray-700 text-white rounded px-2 py-1 text-sm outline-none">
+                        <option value="">全部</option>
+                        <option value="内地">内地</option>
+                        <option value="港台">港台</option>
+                        <option value="欧美">欧美</option>
+                        <option value="日韩">日韩</option>
+                        <option value="爱情">爱情</option>
+                        <option value="战争">战争</option>
+                        <option value="动作">动作</option>
+                        <option value="伦理">伦理</option>
+                    </select>
+                </div>
+                <!-- 电视剧分类下拉 -->
+                <div>
+                    <label class="text-gray-300 text-sm mr-1">电视剧:</label>
+                    <select class="sub-category-select bg-gray-700 text-white rounded px-2 py-1 text-sm outline-none">
+                        <option value="">全部</option>
+                        <option value="内地剧">内地剧</option>
+                        <option value="港台剧">港台剧</option>
+                        <option value="日韩剧">日韩剧</option>
+                        <option value="欧美剧">欧美剧</option>
+                        <option value="伦理剧">伦理剧</option>
+                    </select>
+                </div>
+                <!-- 综艺分类下拉 -->
+                <div>
+                    <label class="text-gray-300 text-sm mr-1">综艺:</label>
+                    <select class="sub-category-select bg-gray-700 text-white rounded px-2 py-1 text-sm outline-none">
+                        <option value="">全部</option>
+                        <option value="内地综艺">内地综艺</option>
+                        <option value="港台综艺">港台综艺</option>
+                        <option value="日韩综艺">日韩综艺</option>
+                        <option value="欧美综艺">欧美综艺</option>
+                    </select>
+                </div>
+                <!-- 动画分类下拉 -->
+                <div>
+                    <label class="text-gray-300 text-sm mr-1">动画:</label>
+                    <select class="sub-category-select bg-gray-700 text-white rounded px-2 py-1 text-sm outline-none">
+                        <option value="">全部</option>
+                        <option value="内地">内地</option>
+                        <option value="港台">港台</option>
+                        <option value="日韩">日韩</option>
+                        <option value="欧美">欧美</option>
+                    </select>
+                </div>
+                <!-- 直播分类下拉 -->
+                <div>
+                    <label class="text-gray-300 text-sm mr-1">直播:</label>
+                    <select class="sub-category-select bg-gray-700 text-white rounded px-2 py-1 text-sm outline-none">
+                        <option value="">全部</option>
+                        <option value="体育">体育</option>
+                        <option value="新闻">新闻</option>
+                        <option value="影视频道">影视频道</option>
+                    </select>
+                </div>
+            </div>
+            <div class="text-gray-400 text-sm">共 <span id="total-count">0</span> 条结果</div>
+        </div>
+        <!-- 分版块渲染容器 -->
+        <div id="multi-section-container"></div>
+    </div>
+    <!-- 详情弹窗 -->
+    <div id="detail-modal" class="fixed inset-0 bg-black/80 z-50 overflow-y-auto">
+        <div class="min-h-screen flex items-start justify-center p-3 py-8">
+            <div class="bg-gray-900 w-full max-w-4xl rounded-xl relative overflow-hidden">
+                <button onclick="app.closeDetailModal()" class="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-black/60 flex items-center justify-center text-white">
+                    <i class="fa fa-times"></i>
+                </button>
+                <span id="detail-status-badge" style="display:none;"></span>
+                <div class="md:flex">
+                    <div class="md:w-1/3">
+                        <img id="detail-poster" class="w-full">
+                    </div>
+                    <div class="p-4 md:w-2/3">
+                        <h3 id="detail-title" class="text-xl md:text-2xl font-bold"></h3>
+                        <div class="flex flex-wrap gap-3 mt-2 text-sm text-gray-300">
+                            <span id="detail-rating"></span>
+                            <span id="detail-year"></span>
+                            <span id="detail-type"></span>
+                            <span>👁 <span id="detail-views"></span></span>
+                        </div>
+                        <div class="mt-4">
+                            <h4 class="text-gray-400 text-sm">简介</h4>
+                            <p id="detail-plot" class="mt-1 text-gray-200 text-sm"></p>
+                        </div>
+                        <div class="mt-3">
+                            <h4 class="text-gray-400 text-sm">演员</h4>
+                            <p id="detail-cast" class="mt-1 text-gray-200 text-sm"></p>
+                        </div>
+                        <div class="mt-4">
+                            <button id="detail-play-btn" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg">
+                                <i class="fa fa-play mr-2"></i>立即播放
+                            </button>
+                        </div>
+                        <div id="episodes-section" class="mt-4 hidden">
+                            <h4 class="text-gray-400 text-sm mb-2">选集</h4>
+                            <div id="episodes-grid" class="flex flex-wrap gap-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 播放器弹窗 -->
+    <div id="player-modal" class="fixed inset-0 bg-black z-[999] flex items-center justify-center p-2">
+        <div class="w-full">
+            <div class="flex justify-between items-center mb-2 px-1">
+                <div>
+                    <h4 id="player-title" class="font-medium"></h4>
+                    <div id="player-episode-info" class="text-sm text-gray-400"></div>
+                </div>
+                <button onclick="app.closePlayer()" class="text-white text-xl"><i class="fa fa-times"></i></button>
+            </div>
+            <!-- 播放器外层容器，用于跑马灯悬浮 -->
+            <div class="player-wrap">
+                <!-- 视频画面上方跑马灯 -->
+                <div class="video-marquee-box">
+                    <div class="video-marquee-text">白菜影视资源来源于网络，请勿用于非法用途！仅供学习测试使用，侵权请联系删除！欢迎植根心田！</div>
+                </div>
+                <video id="main-player" controls></video>
+            </div>
+            <div class="flex justify-center gap-4 mt-3">
+                <button id="prev-ep-btn" class="px-4 py-2 bg-gray-700 rounded"><i class="fa fa-chevron-left"></i> 上一集</button>
+                <button onclick="app.toggleFullScreen()" class="px-4 py-2 bg-gray-700 rounded"><i class="fa fa-expand"></i> 全屏</button>
+                <button id="next-ep-btn" class="px-4 py-2 bg-gray-700 rounded">下一集 <i class="fa fa-chevron-right"></i></button>
+            </div>
+        </div>
+    </div>
+<script>
+const app = {
+    state: {
+        // 改为：每个分类独立保存页码
+        pageMap: {
+            movie:1,
+            tv:1,
+            variety:1,
+            anime:1,
+            live:1
+        },
+        itemsPerPage: 14,
+        currentFilter: 'all',
+        subCategory: '',
+        searchQuery: '',
+        sortBy: 'newest',
+        data: [],
+        currentPlayingItem: null,
+        currentEpisodeIndex: 0,
+        episodeList: [],
+        currentHeroId: null,
+        hlsInstance: null,
+        currentDetailItem: null,
+        heroCarouselList: [],
+        heroCarouselIndex: 0,
+        heroCarouselTimer: null,
+        /* ---- 视频跑马灯状态 ---- */
+        marqueePoints: [600, 1800, 2400], // 10分钟、30分钟、40分钟（秒）
+        marqueeTriggered: {},
+            // 记录每个时间点是否已触发
+        marqueeInitialShown: false        // 开播时首次滚动是否已显示
+    },
+    mockData : [],
+    init() {
+        this.state.data = [...this.mockData];
+        // Hero轮播改为按更新时间排序
+        this.state.heroCarouselList = [...this.state.data].sort((a, b) => b.updateTime - a.updateTime);
+        this.state.heroCarouselIndex = 0;
+        this.renderHero();
+        this.startHeroCarousel();
+        this.renderMultiSection();
+        this.bindEvents();
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.closePlayer();
+                this.closeDetailModal();
+            }
+        });
+        const prevBtn = document.getElementById('prev-ep-btn');
+        const nextBtn = document.getElementById('next-ep-btn');
+        if(prevBtn){
+            prevBtn.onclick = ()=>{
+                if(this.state.currentEpisodeIndex > 0){
+                    this.loadEpisode(this.state.currentEpisodeIndex - 1);
+                }
+            }
+        }
+        if(nextBtn){
+            nextBtn.onclick = ()=>{
+                if(this.state.currentEpisodeIndex < this.state.episodeList.length -1){
+                    this.loadEpisode(this.state.currentEpisodeIndex + 1);
+                }
+            }
+        }
+        const heroSection = document.getElementById('hero-section');
+        if (heroSection) {
+            heroSection.addEventListener('mouseenter', () => this.stopHeroCarousel());
+            heroSection.addEventListener('mouseleave', () => this.startHeroCarousel());
+        }
+        /* ---- 跑马灯动画结束后移除类，复位到隐藏状态 ---- */
+        const marqueeText = document.querySelector('.video-marquee-text');
+        if (marqueeText) {
+            marqueeText.addEventListener('animationend', () => {
+                marqueeText.classList.remove('scrolling');
+            });
+        }
+    },
+    // 切换版块页码
+    changeSectionPage(sectionKey, pageNum){
+        this.state.pageMap[sectionKey] = pageNum;
+        this.renderMultiSection();
+        window.scrollTo({top:0,behavior:'smooth'});
+    },
+    /* ============ 视频跑马灯控制 ============ */
+    /**
+     * 重置跑马灯触发状态（每次加载新视频/新集数时调用）
+     */
+    resetMarquee() {
+        this.state.marqueeTriggered = {};
+        this.state.marqueeInitialShown = false;
+        const text = document.querySelector('.video-marquee-text');
+        if (text) {
+            text.classList.remove('scrolling');
+        }
+    },
+    /**
+     * 主动触发一次跑马灯滚动
+     */
+    triggerMarquee() {
+        const text = document.querySelector('.video-marquee-text');
+        if (!text) return;
+        // 强制重排，确保连续触发时动画能重新播放
+        text.classList.remove('scrolling');
+        void text.offsetWidth;
+        text.classList.add('scrolling');
+    },
+    /**
+     * 视频 timeupdate 回调：检测是否到达 10/30/40 分钟节点
+     */
+    onMarqueeTimeUpdate() {
+        const player = document.getElementById('main-player');
+        if (!player || !player.currentTime) return;
+        const t = player.currentTime;
+        this.state.marqueePoints.forEach(pt => {
+            if (t >= pt && !this.state.marqueeTriggered[pt]) {
+                this.state.marqueeTriggered[pt] = true;
+                this.triggerMarquee();
+            }
+        });
+    },
+    startHeroCarousel() {
+        this.stopHeroCarousel();
+        if (this.state.heroCarouselList.length <= 1) return;
+        this.state.heroCarouselTimer = setInterval(() => {
+            this.state.heroCarouselIndex++;
+            if (this.state.heroCarouselIndex >= this.state.heroCarouselList.length) {
+                this.state.heroCarouselIndex = 0;
+            }
+            this.renderHero();
+        }, 6000);
+    },
+    stopHeroCarousel() {
+        if (this.state.heroCarouselTimer) {
+            clearInterval(this.state.heroCarouselTimer);
+            this.state.heroCarouselTimer = null;
+        }
+    },
+    renderHero() {
+        const heroItem = this.state.heroCarouselList[this.state.heroCarouselIndex];
+        if (!heroItem) return;
+        this.state.currentHeroId = heroItem.id;
+        document.getElementById('hero-section').classList.remove('hidden');
+        document.getElementById('hero-backdrop').src = heroItem.backdrop;
+        document.getElementById('hero-backdrop').alt = `${heroItem.title}背景图`;
+        document.getElementById('hero-title').innerText = heroItem.title;
+        document.getElementById('hero-rating').innerText = heroItem.rating;
+        document.getElementById('hero-year').innerText = heroItem.year;
+        document.getElementById('hero-views').innerText = this.formatNumber(heroItem.views);
+        document.getElementById('hero-plot').innerText = heroItem.plot;
+        const tagEl = document.getElementById('hero-tag');
+        let typeText = '';
+        let typeClass = '';
+        switch(heroItem.mainType){
+            case 'movie':
+                typeText = '精选电影';
+                typeClass = 'inline-block px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded-full uppercase tracking-wide';
+                break;
+            case 'tv':
+                typeText = '热播电视剧';
+                typeClass = 'inline-block px-3 py-1 bg-purple-600 text-white text-xs font-bold rounded-full uppercase tracking-wide';
+                break;
+            case 'variety':
+                typeText = '热门综艺';
+                typeClass = 'inline-block px-3 py-1 bg-rose-600 text-white text-xs font-bold rounded-full uppercase tracking-wide';
+                break;
+            case 'anime':
+                typeText = '精选动画';
+                typeClass = 'inline-block px-3 py-1 bg-teal-600 text-white text-xs font-bold rounded-full uppercase tracking-wide';
+                break;
+            case 'live':
+                typeText = '直播频道';
+                typeClass = 'inline-block px-3 py-1 bg-orange-600 text-white text-xs font-bold rounded-full uppercase tracking-wide';
+                break;
+            default:
+                typeText = '影视';
+                typeClass = 'inline-block px-3 py-1 bg-gray-600 text-white text-xs font-bold rounded-full uppercase tracking-wide';
+        }
+        tagEl.innerText = typeText;
+        tagEl.className = typeClass;
+    },
+    getSeriesStatus(item) {
+        if (item.mainType !== 'tv') return { text: '', className: '' };
+        const currentEpisodes = item.episodeUrls ? item.episodeUrls.length : 0;
+        const totalEpisodes = item.totalEpisodes || item.episodes;
+        if (totalEpisodes && currentEpisodes >= totalEpisodes) {
+            return { text: '已完结', className: 'bg-green-600' };
+        } else {
+            return { text: `更新至${currentEpisodes}集`, className: 'bg-orange-500' };
+        }
+    },
+    // 渲染单个版块卡片
+    renderCard(item){
+        const status = this.getSeriesStatus(item);
+        const statusBadge = status.text ?
+            `<span class="absolute top-2 right-2 ${status.className} text-white text-xs font-bold px-2 py-1 rounded shadow-md z-10">${status.text}</span>` : '';
+        const ratingBadge = `<span class="absolute top-2 left-2 bg-yellow-500/90 backdrop-blur-sm text-white text-xs font-bold px-2 py-1 rounded shadow-md z-10">⭐ ${item.rating}</span>`;
+        let typeLabel = '';
+        switch(item.mainType){
+            case 'movie': typeLabel = '电影'; break;
+            case 'tv': typeLabel = '电视剧'; break;
+            case 'variety': typeLabel = '综艺'; break;
+            case 'anime': typeLabel = '动画'; break;
+            case 'live': typeLabel = '直播'; break;
+            default: typeLabel = '影视';
+        }
+        const iconMap = {
+            movie:'fa-film',
+            tv:'fa-tv',
+            variety:'fa-microphone',
+            anime:'fa-dragon',
+            live:'fa-video-camera'
+        };
+        const typeBadgeOnHover = `
+                <div class="type-badge absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/90 to-transparent p-3 translate-y-full opacity-0 transition-all duration-300">
+                    <span class="text-white text-sm font-bold flex items-center">
+                        <i class="fa ${iconMap[item.mainType]||'fa-film'} mr-2 text-blue-400"></i> ${typeLabel}
+                    </span>
+                </div>
+            `;
+        return `
+        <div class="group relative bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-700/50 poster-card">
+            <div class="relative aspect-[2/3] overflow-hidden cursor-pointer" onclick="app.openDetailModal(${item.id})">
+                <img src="${item.poster}" alt="${item.title}海报" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy">
+                <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center">
+                    <div class="opacity-0 group-hover:opacity-100 transform scale-50 group-hover:scale-100 transition-all duration-300">
+                        <div class="bg-white/20 backdrop-blur-md rounded-full p-3">
+                            <i class="fa fa-play text-white text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+                ${ratingBadge}
+                ${statusBadge}
+                ${typeBadgeOnHover}
+            </div>
+            <div class="p-3 md:p-4">
+                <h3 class="text-white font-bold text-sm md:text-lg truncate mb-1" title="${item.title}">${item.title}</h3>
+                <div class="flex justify-between items-center text-gray-400 text-xs md:text-sm">
+                    <span>${item.year}</span>
+                    <span class="text-gray-500">${item.subCategory||''}</span>
+                </div>
+            </div>
+        </div>`;
+    },
+    // 新版：分版块渲染
+    renderMultiSection(){
+        const container = document.getElementById('multi-section-container');
+        container.innerHTML = '';
+        const sectionMap = [
+            {key:'movie',title:'🎬 电影'},
+            {key:'tv',title:'📺 电视剧'},
+            {key:'variety',title:'🎙️ 综艺'},
+            {key:'anime',title:'🎞️ 动画'},
+            {key:'live',title:'📡 直播'}
+        ];
+        let totalAll = 0;
+        sectionMap.forEach(sec=>{
+            // 筛选当前版块数据
+            let secData = this.state.data.filter(item=>{
+                const matchMain = this.state.currentFilter === 'all' || item.mainType === this.state.currentFilter;
+                const matchType = item.mainType === sec.key;
+                const matchSub = !this.state.subCategory || item.subCategory === this.state.subCategory;
+                const matchSearch = item.title.toLowerCase().includes(this.state.searchQuery.toLowerCase());
+                return matchMain && matchType && matchSub && matchSearch;
+            });
+            if(secData.length <=0) return;
+            totalAll += secData.length;
+            // 排序
+            secData.sort((a, b) => {
+                if (this.state.sortBy === 'newest') return b.updateTime - a.updateTime;
+                if (this.state.sortBy === 'rating') return b.rating - a.rating;
+                if (this.state.sortBy === 'views') return b.views - a.views;
+                return 0;
+            });
+            // 获取当前版块页码
+            const currentPage = this.state.pageMap[sec.key];
+            const start = (currentPage - 1) * this.state.itemsPerPage;
+            const end = start + this.state.itemsPerPage;
+            const pageItems = secData.slice(start, end);
+            const totalPages = Math.ceil(secData.length / this.state.itemsPerPage);
+
+            // 构建版块HTML
+            let sectionHtml = `<div class="section-wrap">
+                <div class="section-header">
+                    <h2 class="text-xl font-bold text-white">${sec.title}</h2>
+                    <span class="text-gray-400 text-sm">共${secData.length}部</span>
+                </div>
+                <div class="section-grid">`;
+            pageItems.forEach(item=>{
+                sectionHtml += this.renderCard(item);
+            });
+            sectionHtml += `</div>`;
+
+            // 渲染分页栏（大于1页才显示）
+            if(totalPages > 1){
+                sectionHtml += `
+                <div class="flex flex-wrap justify-center gap-2 mt-4">
+                    <button onclick="app.changeSectionPage('${sec.key}',${currentPage-1})" class="page-btn ${currentPage<=1?'disabled':''}" ${currentPage<=1?'disabled':''}>上一页</button>
+                `;
+                // 页码按钮
+                for(let p=1;p<=totalPages;p++){
+                    // 只渲染附近页码，防止页码太多
+                    if(p === 1 || p === totalPages || (p >= currentPage-1 && p <= currentPage+1)){
+                        sectionHtml += `<button onclick="app.changeSectionPage('${sec.key}',${p})" class="page-btn ${p===currentPage?'active':''}">${p}</button>`;
+                    }else if(p === currentPage-2 || p === currentPage+2){
+                        sectionHtml += `<span class="px-2">...</span>`;
+                    }
+                }
+                sectionHtml += `
+                    <button onclick="app.changeSectionPage('${sec.key}',${currentPage+1})" class="page-btn ${currentPage>=totalPages?'disabled':''}" ${currentPage>=totalPages?'disabled':''}>下一页</button>
+                </div>`;
+            }
+            sectionHtml += `</div>`;
+            container.innerHTML += sectionHtml;
+        });
+        document.getElementById('total-count').innerText = totalAll;
+        if(totalAll === 0){
+            container.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-12 text-gray-500"><i class="fa fa-search text-4xl mb-4"></i><p>没有找到相关视频</p></div>`;
+        }
+    },
+    openDetailModal(id) {
+        const item = this.state.data.find(i => i.id === id);
+        if (!item) return;
+        this.state.currentDetailItem = item;
+        const modal = document.getElementById('detail-modal');
+        document.getElementById('detail-poster').src = item.poster;
+        document.getElementById('detail-poster').alt = `${item.title}海报`;
+        document.getElementById('detail-title').innerText = item.title;
+        document.getElementById('detail-rating').innerText = `⭐ ${item.rating}`;
+        document.getElementById('detail-year').innerText = item.year;
+        let typeText = '';
+        switch(item.mainType){
+            case 'movie': typeText = '电影'; break;
+            case 'tv': typeText = '电视剧'; break;
+            case 'variety': typeText = '综艺'; break;
+            case 'anime': typeText = '动画'; break;
+            case 'live': typeText = '直播'; break;
+            default: typeText = '影视';
+        }
+        document.getElementById('detail-type').innerText = typeText;
+        document.getElementById('detail-views').innerText = this.formatNumber(item.views);
+        document.getElementById('detail-plot').innerText = item.plot;
+        document.getElementById('detail-cast').innerText = item.cast;
+        const status = this.getSeriesStatus(item);
+        const statusBadge = document.getElementById('detail-status-badge');
+        if (status.text) {
+            statusBadge.innerText = status.text;
+            statusBadge.className = `absolute top-4 left-4 px-3 py-1 rounded text-xs font-bold text-white shadow-lg ${status.className}`;
+            statusBadge.style.display = 'block';
+        } else {
+            statusBadge.style.display = 'none';
+        }
+        const episodesSection = document.getElementById('episodes-section');
+        const episodesGrid = document.getElementById('episodes-grid');
+        episodesGrid.innerHTML = '';
+        if ((item.mainType === 'tv' || item.mainType === 'variety' || item.mainType === 'anime') && item.episodeUrls && item.episodeUrls.length > 0) {
+            episodesSection.classList.remove('hidden');
+            item.episodeUrls.forEach((url, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'episode-btn bg-gray-700 border border-gray-600 text-gray-300 py-2 px-1 rounded text-sm hover:text-white';
+                btn.innerText = index + 1;
+                btn.onclick = () => {
+                    this.checkPasswordAndPlay(item.id, index);
+                };
+                episodesGrid.appendChild(btn);
+            });
+        } else {
+            episodesSection.classList.add('hidden');
+        }
+        const playBtn = document.getElementById('detail-play-btn');
+        playBtn.onclick = () => {
+            this.checkPasswordAndPlay(item.id, 0);
+        };
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    },
+    closeDetailModal() {
+        const modal = document.getElementById('detail-modal');
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+        this.state.currentDetailItem = null;
+    },
+    checkPasswordAndPlay(id, episodeIndex) {
+        const item = this.state.data.find(i => i.id === id);
+        if (!item) return;
+        if (!item.needPassword) {
+            this.closeDetailModal();
+            this.playVideo(id, episodeIndex);
+            return;
+        }
+        const inputPwd = prompt(`该影视需要播放密码，请输入密码：`);
+        if (inputPwd === null) return;
+        if (inputPwd.trim() === item.playPassword) {
+            this.closeDetailModal();
+            this.playVideo(id, episodeIndex);
+        } else {
+            alert('密码错误，无法播放！');
+        }
+    },
+    playHeroVideo() {
+        if (this.state.currentHeroId) {
+            this.checkPasswordAndPlay(this.state.currentHeroId, 0);
+        }
+    },
+    showHeroDetails() {
+        if (this.state.currentHeroId) {
+            this.openDetailModal(this.state.currentHeroId);
+        }
+    },
+    setFilter(filter) {
+        this.state.currentFilter = filter;
+        this.state.subCategory = '';
+        // 切换顶部导航，重置所有版块页码为1
+        Object.keys(this.state.pageMap).forEach(key=>{
+            this.state.pageMap[key]=1;
+        });
+        document.querySelectorAll('.sub-category-select').forEach(sel=>sel.value='');
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            if (btn.dataset.filter === filter) {
+                btn.classList.remove('text-gray-300', 'bg-transparent');
+                btn.classList.add('text-blue-400', 'font-semibold', 'bg-gray-600/50');
+            } else {
+                btn.classList.add('text-gray-300');
+                btn.classList.remove('text-blue-400', 'font-semibold', 'bg-gray-600/50');
+            }
+        });
+        this.renderMultiSection();
+    },
+    setSubCategory(subCat){
+        this.state.subCategory = subCat;
+        // 切换二级分类，重置全部版块页码
+        Object.keys(this.state.pageMap).forEach(key=>{
+            this.state.pageMap[key]=1;
+        });
+        this.renderMultiSection();
+    },
+    resetFilter() {
+        this.setFilter('all');
+        document.getElementById('search-input').value = '';
+        this.state.searchQuery = '';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+    setSort(sortBy) {
+        this.state.sortBy = sortBy;
+        // 切换排序重置所有分页
+        Object.keys(this.state.pageMap).forEach(key=>{
+            this.state.pageMap[key]=1;
+        });
+        this.renderMultiSection();
+    },
+    bindEvents() {
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                this.state.searchQuery = e.target.value;
+                // 搜索重置所有分页
+                Object.keys(this.state.pageMap).forEach(key=>{
+                    this.state.pageMap[key]=1;
+                });
+                this.renderMultiSection();
+            });
+        }
+        const subSelects = document.querySelectorAll('.sub-category-select');
+        subSelects.forEach(sel=>{
+            sel.addEventListener('change',(e)=>{
+                this.setSubCategory(e.target.value);
+            })
+        })
+    },
+    formatNumber(num) {
+        if (num >= 10000) return (num / 10000).toFixed(1) + '万';
+        return num;
+    },
+    playVideo(id, episodeIndex = 0) {
+        const item = this.state.data.find(i => i.id === id);
+        if (!item) return;
+        this.state.currentPlayingItem = item;
+        const playerContainer = document.getElementById('player-modal');
+        const player = document.getElementById('main-player');
+        const titleEl = document.getElementById('player-title');
+        const episodeInfoEl = document.getElementById('player-episode-info');
+        const prevBtn = document.getElementById('prev-ep-btn');
+        const nextBtn = document.getElementById('next-ep-btn');
+        playerContainer.style.display = 'flex';
+        titleEl.innerText = item.title;
+        if (this.state.hlsInstance) {
+            this.state.hlsInstance.destroy();
+            this.state.hlsInstance = null;
+        }
+        if (item.mainType === 'tv' || item.mainType === 'variety' || item.mainType === 'anime') {
+            this.state.episodeList = item.episodeUrls;
+            if (episodeIndex >= this.state.episodeList.length) {
+                episodeIndex = 0;
+            }
+            this.state.currentEpisodeIndex = episodeIndex;
+            this.loadEpisode(this.state.currentEpisodeIndex);
+            prevBtn.style.display = 'flex';
+            nextBtn.style.display = 'flex';
+            this.updateNavButtonsState();
+        } else {
+            episodeInfoEl.innerText = `${item.duration || '直播/影片'}`;
+            this.loadSource(player, item.videoUrl);
+            prevBtn.style.display = 'none';
+            nextBtn.style.display = 'none';
+        }
+    },
+    loadEpisode(index) {
+        if (!this.state.episodeList || index < 0 || index >= this.state.episodeList.length) return;
+        this.state.currentEpisodeIndex = index;
+        const url = this.state.episodeList[index];
+        const player = document.getElementById('main-player');
+        this.loadSource(player, url);
+        this.updateEpisodeInfo();
+        this.updateNavButtonsState();
+    },
+    updateEpisodeInfo() {
+        const episodeInfoEl = document.getElementById('player-episode-info');
+        const currentEp = this.state.currentEpisodeIndex + 1;
+        const totalEp = this.state.episodeList.length;
+        episodeInfoEl.innerText = `第 ${currentEp} 集 / 共 ${totalEp} 集`;
+    },
+    updateNavButtonsState() {
+        const prevBtn = document.getElementById('prev-ep-btn');
+        const nextBtn = document.getElementById('next-ep-btn');
+        if (this.state.currentEpisodeIndex <= 0) {
+            prevBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+            prevBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+        if (this.state.currentEpisodeIndex >= this.state.episodeList.length - 1) {
+            nextBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+            nextBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    },
+    loadSource(player, url) {
+        if (this.state.hlsInstance) {
+            this.state.hlsInstance.destroy();
+            this.state.hlsInstance = null;
+        }
+        /* ---- 每次加载新源时重置跑马灯状态 & 绑定监听 ---- */
+        this.resetMarquee();
+        player.ontimeupdate = () => this.onMarqueeTimeUpdate();
+        player.onplay = () => {
+            // 开播时首次滚动（仅一次）
+            if (!this.state.marqueeInitialShown) {
+                this.state.marqueeInitialShown = true;
+                this.triggerMarquee();
+            }
+        };
+        if (Hls.isSupported()) {
+            const hls = new Hls({
+                maxBufferLength: 30,
+                maxMaxBufferLength: 60
+            });
+            hls.loadSource(url);
+            hls.attachMedia(player);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                player.play().catch(e => console.log('自动播放被浏览器拦截:', e));
+            });
+            this.state.hlsInstance = hls;
+        } else if (player.canPlayType('application/vnd.apple.mpegurl')) {
+            player.src = url;
+            player.play().catch(e => console.log('自动播放被浏览器拦截:', e));
+        }
+    },
+    closePlayer() {
+        const playerContainer = document.getElementById('player-modal');
+        const player = document.getElementById('main-player');
+        if (this.state.hlsInstance) {
+            this.state.hlsInstance.destroy();
+            this.state.hlsInstance = null;
+        }
+        player.pause();
+        player.src = '';
+        player.removeAttribute('src');
+        player.load();
+        playerContainer.style.display = 'none';
+        this.state.currentPlayingItem = null;
+        this.state.episodeList = [];
+        this.state.currentEpisodeIndex = 0;
+        /* 关闭播放器时也清理跑马灯监听 */
+        player.ontimeupdate = null;
+        player.onplay = null;
+        this.resetMarquee();
+    },
+    toggleFullScreen() {
+        const playerContainer = document.querySelector('#player-modal > div');
+        if (!document.fullscreenElement) {
+            if (playerContainer.requestFullscreen) {
+                playerContainer.requestFullscreen();
+            } else if (playerContainer.webkitRequestFullscreen) {
+                playerContainer.webkitRequestFullscreen();
+            }
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen()) {
+                document.webkitExitFullscreen();
+            }
+        }
+    }
+};
+document.addEventListener('DOMContentLoaded', () => {
+    app.init();
+});
+</script>
+</body>
+</html>
+
